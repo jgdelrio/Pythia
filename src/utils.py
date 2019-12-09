@@ -40,3 +40,6 @@ def in_ipynb(verbose=VERBOSE):
             return False
     except NameError:
         return False
+
+
+LOG = get_logger(name="Pythia", to_stdout=True, level=LOG_LEVEL)

@@ -1,23 +1,28 @@
 import logging
-from os import getenv, path
+from os import getenv
+import pathlib
 from datetime import datetime
 
-from src.utils import get_logger
 
-
+DEFAULT_INFO_FILE = "info_data.json"
+DEFAULT_STOCK_FILE = "stock_data.zip"
 DEFAULT_HEADER = ("Content-type", 'text/plain; charset=utf-8')
 DEFAULT_UTC_TS = datetime.utcfromtimestamp(datetime.min.toordinal())
-ROOT = path.abspath(path.join(path.dirname(__file__), path.pardir))
+ROOT = pathlib.Path(__file__).parents[1]
+DATA_FOLDER = ROOT.joinpath("data")
 
 ENV = getenv("ENV", "local")
 MAX_CONNECTIONS = int(getenv("MAX_CONNECTIONS", "10"))
-MIN_WAIT = int(getenv("MIN_WAIT", "3"))
-VERBOSE = int(getenv("VERBOSE", "1"))
+MIN_SEM_WAIT = int(getenv("MIN_WAIT", "2"))
+VERBOSE = int(getenv("VERBOSE", "3"))
 
 if ENV == "local":
     LOG_LEVEL = logging.DEBUG
 elif ENV == "prod":
     LOG_LEVEL = logging.INFO
 
-
-LOG = get_logger(name="Pythia", to_stdout=True, level=LOG_LEVEL)
+HEADERS = {
+    'user-agent': ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) '
+                   'AppleWebKit/537.36 (KHTML, like Gecko) '
+                   'Chrome/45.0.2454.101 Safari/537.36'),
+}
