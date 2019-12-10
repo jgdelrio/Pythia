@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from traitlets.config.loader import LazyConfigValue
 
-from src.config import DEFAULT_UTC_TS, LOG_LEVEL, VERBOSE
+from src.config import DFT_UTC_TS, LOG_LEVEL, VERBOSE
 
 
 def get_logger(name="haar_training", to_stdout=False, level=LOG_LEVEL):
@@ -20,7 +20,7 @@ def get_logger(name="haar_training", to_stdout=False, level=LOG_LEVEL):
 
 def bigint2utctimestamp(bigint):
     if bigint is None:
-        return DEFAULT_UTC_TS
+        return DFT_UTC_TS
     elif isinstance(bigint, str):
         bigint = int(bigint)
     return datetime.utcfromtimestamp(bigint / 1e3)

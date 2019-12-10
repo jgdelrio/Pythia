@@ -1,0 +1,10 @@
+{
+  "symbol": "AMZN",
+  "name": "Amazon.com Inc.",
+  "type": "Equity",
+  "region": "United States",
+  "marketOpen": "09:30",
+  "marketClose": "16:00",
+  "timezone": "UTC-05",
+  "currency": "USD"
+}

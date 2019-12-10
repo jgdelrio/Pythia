@@ -1,13 +1,20 @@
+import yaml
 import logging
 from os import getenv
 import pathlib
 from datetime import datetime
 
 
-DEFAULT_INFO_FILE = "info_data.json"
-DEFAULT_STOCK_FILE = "stock_data.zip"
-DEFAULT_HEADER = ("Content-type", 'text/plain; charset=utf-8')
-DEFAULT_UTC_TS = datetime.utcfromtimestamp(datetime.min.toordinal())
+# DEFAULT PARAMETERS
+DFT_INFO_FILE = "info_data"
+DFT_INFO_EXT = ".json"
+DFT_STOCK_FILE = "stock_data"
+DFT_STOCK_EXT = ".zip"
+DFT_FX_FILE = "fx_data"
+DFT_FX_EXT = ".zip"
+DFT_HEADER = ("Content-type", 'text/plain; charset=utf-8')
+DFT_UTC_TS = datetime.utcfromtimestamp(datetime.min.toordinal())
+
 ROOT = pathlib.Path(__file__).parents[1]
 DATA_FOLDER = ROOT.joinpath("data")
 
@@ -26,3 +33,11 @@ HEADERS = {
                    'AppleWebKit/537.36 (KHTML, like Gecko) '
                    'Chrome/45.0.2454.101 Safari/537.36'),
 }
+
+KEYS_FILE = ROOT.joinpath("keys.yml")
+
+if KEYS_FILE.exists():
+    with open(KEYS_FILE, mode="r") as f:
+        KEYS_SET = yaml.load(f, Loader=yaml.FullLoader)
+else:
+    raise Exception("ERROR: Please create the file 'keys.yml' at the root of the repository with valid keys")
