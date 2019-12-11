@@ -14,14 +14,16 @@ import traceback
 from datetime import datetime
 from src.alpha_vantage_api import alpha_vantage_query, fx_regex
 from src.utils import LOG
-from src.config import DATA_FOLDER, KEYS_SET, DFT_STOCK_FILE, DFT_STOCK_EXT, DFT_INFO_FILE, DFT_INFO_EXT, \
-    DFT_FX_FILE, DFT_FX_EXT, MAX_CONNECTIONS, MIN_SEM_WAIT, HEADERS, VERBOSE
+from src.config import DATA_FOLDER, KEYS_SET, HEADERS, MAX_CONNECTIONS, MIN_SEM_WAIT, \
+    DFT_STOCK_FILE, DFT_STOCK_EXT, DFT_INFO_FILE, DFT_INFO_EXT, DFT_FX_FILE, DFT_FX_EXT, VERBOSE
 
 
+nest_asyncio.apply()
+# RegExp
 clean_names_regex = re.compile("[\w]*$")
 capture_enum_regex = re.compile("^[\d]*\.\s*")
+# Functions & Filtering
 dateparse = lambda dates: pd.datetime.strptime(dates, '%Y-%m-%d')
-nest_asyncio.apply()
 
 
 def build_path_and_file(symbol, category):
@@ -105,7 +107,7 @@ async def read_stock_info(info_file, check=True):
 async def update_stock_info(info_file, info, verbose=VERBOSE):
     try:
         # Clean key names
-        clean_info = []
+        clean_info = {}
         for key, val in info.items():
             try:
                 key = key.replace(capture_enum_regex.findall(key)[0], "")
@@ -117,7 +119,9 @@ async def update_stock_info(info_file, info, verbose=VERBOSE):
         old_info = await read_stock_info(info_file, check=False)
         await save_stock_info(info_file, clean_info, old_info=old_info)
         if verbose > 1:
-            LOG.info(f"Stock info {info_file} updated OK")
+            symbol = info_file.parent
+            tabs = "\t" * 2 if len(symbol) <= 5 else "\t"
+            LOG.info(f"Updating {symbol} info:{tabs}OK")
     except Exception as err:
         LOG.error(f"ERROR updating info: {info_file}. Msg: {err.__repr__()} {traceback.print_tb(err.__traceback__)}")
 
@@ -254,9 +258,8 @@ def test_retrieve_stocks():
     # SIPP: Altria, Amazon, Axa, BHP, BT, Dassault Systemes, Henkel AG&CO, Liberty Global, National Grid, Reach PLC, Renault, Sartorius AG, Starbucks
     problematic = ["RDS.A"]
 
-    symbols = ['']
     retrieve_stock_list(symbols, category="daily", gap=7)
 
 
 if __name__ == "__main__":
-    update_info_with_search()
+    test_retrieve_stocks()

@@ -1,5 +1,27 @@
-CNY: "Chinese Yuan"
-EUR: "Euro"
-GBP: "British Pound"
-INR: "Indian Rupee"
-USD: "United States Dollar"
+CNY:
+  name: "Chinese Yuan"
+  type: currency
+EUR:
+  name: "Euro"
+  type: currency
+GBP:
+  name: "British Pound"
+  type: currency
+INR:
+  name: "Indian Rupee"
+  type: currency
+USD:
+  name: "United States Dollar"
+  type: currency
+BTC:
+  name: "Bitcoin"
+  type: cryptocurrency
+ETH:
+  name: "Ethereum"
+  type: cryptocurrency
+USDT:
+  name: "Tether"
+  type: cryptocurrency
+XRP:
+  name: "Ripple"
+  type: cryptocurrency

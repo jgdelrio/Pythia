@@ -10,7 +10,7 @@ DFT_INFO_FILE = "info_data"
 DFT_INFO_EXT = ".json"
 DFT_STOCK_FILE = "stock_data"
 DFT_STOCK_EXT = ".zip"
-DFT_FX_FILE = "fx_data"
+DFT_FX_FILE = "data"
 DFT_FX_EXT = ".zip"
 DFT_HEADER = ("Content-type", 'text/plain; charset=utf-8')
 DFT_UTC_TS = datetime.utcfromtimestamp(datetime.min.toordinal())
@@ -34,10 +34,27 @@ HEADERS = {
                    'Chrome/45.0.2454.101 Safari/537.36'),
 }
 
-KEYS_FILE = ROOT.joinpath("keys.yml")
+__FILE_KEYS = ROOT.joinpath("keys.yml")
+__FILE_CURRENCIES = DATA_FOLDER.joinpath("currencies.yml")
 
-if KEYS_FILE.exists():
-    with open(KEYS_FILE, mode="r") as f:
-        KEYS_SET = yaml.load(f, Loader=yaml.FullLoader)
-else:
-    raise Exception("ERROR: Please create the file 'keys.yml' at the root of the repository with valid keys")
+
+def load_yml(ref):
+    if ref.exists():
+        with open(ref, mode="r") as f:
+            return yaml.load(f, Loader=yaml.FullLoader)
+    else:
+        raise Exception("ERROR: File not found")
+
+
+def load_keys(ref):
+    try:
+        return load_yml(ref)
+    except Exception as _:
+        raise Exception("ERROR: Please create the file 'keys.yml' at the root of the repository with valid keys")
+
+
+KEYS_SET = load_keys(__FILE_KEYS)
+CURRENCIES_INFO = load_yml(__FILE_CURRENCIES)
+
+fx_currencies = [key for key, val in CURRENCIES_INFO.items() if val["type"] == "currency"]
+crypto_currencies = [key for key, val in CURRENCIES_INFO.items() if val["type"] == "cryptocurrency"]
