@@ -3,7 +3,8 @@ Alpah Vantage End-points and Parameters
 """
 
 import re
-from config import crypto_currencies
+from src.config import crypto_currencies
+from src.utils import LOG, get_tabs
 
 
 ALPHA_VANTAGE_URI = "https://www.alphavantage.co/query"
@@ -63,7 +64,7 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
         function = get_alpha_vantage_function(category)
 
         params = {"function": function, "symbol": symbol, "outputsize": output_size,
-                  "datatype": datatype, "apikey": key, **kwargs}
+                  "datatype": datatype, "apikey": key}
 
     elif category == "search":
         # Retrieval of best-matching symbols (with scores) and market info
@@ -134,4 +135,18 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
     else:
         raise Exception(f"Category {category} not found")
 
+    # Use extra parameters provided
+    params = {**params, **kwargs}
     return url, params
+
+
+def manage_vantage_errors(response, symbol):
+    if "Error Message" in response.keys():
+        LOG.error(f"ERROR: Not possible to retrieve {symbol}. Msg: {response['Error Message']}")
+        return "release"
+    elif "Note" in response.keys():
+        if response["Note"][:111] == 'Thank you for using Alpha Vantage! Our standard API call frequency ' \
+                                     'is 5 calls per minute and 500 calls per day.':
+            LOG.info(f"Retrieving {symbol}:{get_tabs(symbol, prev=12)} Max frequency reached!")
+            return "longWait"
+    return None

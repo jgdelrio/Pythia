@@ -99,4 +99,18 @@ class DelayedAssert:
             return "\n".join(report)
 
 
+def get_tabs(symbol, prev=7):
+    n = len(symbol) + prev
+    if n <= 10:
+        return "\t" * 4
+    elif n <= 15:
+        return "\t" * 3
+    elif n <= 19:
+        return "\t" * 2
+    elif n <= 23:
+        return "\t"
+    else:
+        return ""
+
+
 LOG = get_logger(name="Pythia", to_stdout=True, level=LOG_LEVEL)

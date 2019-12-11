@@ -12,10 +12,9 @@ import nest_asyncio
 import pandas as pd
 import traceback
 from datetime import datetime
-from src.alpha_vantage_api import alpha_vantage_query, fx_regex
-from src.utils import LOG
-from src.config import DATA_FOLDER, KEYS_SET, HEADERS, MAX_CONNECTIONS, MIN_SEM_WAIT, \
-    DFT_STOCK_FILE, DFT_STOCK_EXT, DFT_INFO_FILE, DFT_INFO_EXT, DFT_FX_FILE, DFT_FX_EXT, VERBOSE
+from src.alpha_vantage_api import alpha_vantage_query, manage_vantage_errors
+from src.utils import LOG, get_tabs
+from src.config import *
 
 
 nest_asyncio.apply()
@@ -43,7 +42,7 @@ def build_info_file(folder_name, category):
     return folder_name.joinpath(DFT_INFO_FILE + "_" + category + DFT_INFO_EXT)
 
 
-async def query_data(symbol, semaphore, category=None, api="vantage", verbose=VERBOSE):
+async def query_data(symbol, semaphore, category=None, api="vantage", verbose=VERBOSE, **kwargs):
     if category is None:
         raise ValueError("Please provide a valid category in the parameters")
     await semaphore.acquire()
@@ -51,17 +50,27 @@ async def query_data(symbol, semaphore, category=None, api="vantage", verbose=VE
         LOG.info("Successfully acquired the semaphore")
 
     if api == "vantage":
-        url, params = alpha_vantage_query(symbol, category, key=KEYS_SET["alpha_vantage"])
-        LOG.info(f"Retrieving {symbol} from '{api}'")
+        url, params = alpha_vantage_query(symbol, category, key=KEYS_SET["alpha_vantage"], **kwargs)
+        LOG.info(f"Retrieving {symbol}:{get_tabs(symbol, prev=12)}From '{api}' API")
+    else:
+        LOG.error(f"Not supported api {api}")
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, params=params, headers=HEADERS) as resp:
-            data = await resp.json()
+    counter = 0
+    while counter <= QUERY_RETRY_LIMIT:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params, headers=HEADERS) as resp:
+                data = await resp.json()
 
-    if "Error Message" in data.keys():
-        LOG.error(f"ERROR: Not possible to retrieve {symbol}. Msg: {data['Error Message']}")
-        semaphore.release()
-        return None
+        if api == "vantage":
+            rst = manage_vantage_errors(data, symbol)
+            if rst == "release":
+                semaphore.release()
+                break
+            elif rst == "longWait":
+                counter += 1
+                await asyncio.sleep(VANTAGE_WAIT)
+            else:
+                break
 
     await asyncio.sleep(MIN_SEM_WAIT)
     if verbose > 2:
@@ -76,8 +85,8 @@ def process_vantage_data(data):
         try:
             info = {key.replace(capture_enum_regex.findall(key)[0], ""): val for key, val in metadata.items()}
         except Exception as err:
-            LOG.ERROR("ERROR cleaning info")
-            print(metadata)
+            LOG.ERROR(f"ERROR cleaning info: {metadata}")
+            info = metadata
     else:
         info = {}
     data_key = [k for k in data.keys() if k != "Meta Data"][0]      # 'Time Series (Daily)' or 'Time Series FX (Weekly)'
@@ -98,8 +107,9 @@ async def read_stock_info(info_file, check=True):
             raise ValueError(f"ERROR: No info found at {info_file}")
 
     if info_file.exists():
-        async with aiofiles.open(info_file, "r") as f:
-            return json.load(f)
+        async with aiofiles.open(info_file, "r") as info:
+            data = await info.read()
+            return await json.loads(data)
     else:
         return {}
 
@@ -119,27 +129,42 @@ async def update_stock_info(info_file, info, verbose=VERBOSE):
         old_info = await read_stock_info(info_file, check=False)
         await save_stock_info(info_file, clean_info, old_info=old_info)
         if verbose > 1:
-            symbol = info_file.parent
-            tabs = "\t" * 2 if len(symbol) <= 5 else "\t"
-            LOG.info(f"Updating {symbol} info:{tabs}OK")
+            symbol = info_file.parent.name
+            LOG.info(f"Updating {symbol} info:{get_tabs(symbol, prev=15)}OK")
     except Exception as err:
         LOG.error(f"ERROR updating info: {info_file}. Msg: {err.__repr__()} {traceback.print_tb(err.__traceback__)}")
 
 
-def save_pandas_data(file_name, data, verbose=VERBOSE):
-    try:
-        stock_data = pd.DataFrame.from_dict(data, orient="index")
-        # Apply clean names to columns and index
-        column_names = [clean_names_regex.findall(c)[0] for c in stock_data.columns.tolist()]
-        stock_data.columns = column_names
-        stock_data.index.name = 'date'
+def clean_pandas_data(dat):
+    data = pd.DataFrame.from_dict(dat, orient="index")
+    # Apply clean names to columns and index
+    column_names = [c.replace(capture_enum_regex.findall(c)[0], "") for c in data.columns.tolist()]
+    data.columns = column_names
+    data.index.name = 'date'
+    data.sort_index(axis=0, inplace=True, ascending=True)  # Sort by date
+    return data
 
-        stock_data.sort_index(axis=0, inplace=True, ascending=True)                     # Sort by date
-        stock_data.reset_index().to_csv(file_name, index=False, compression="infer")    # Save
+
+def save_pandas_data(file_name, dat, update=False, verbose=VERBOSE):
+    try:
+        data = clean_pandas_data(dat)
+
+        if update:
+            old_data = read_pandas_data(file_name)
+            last_index = old_data.index[-1]
+            idx = data.index.get_loc(last_index.strftime('%Y-%m-%d')) + 1
+
+            updated_data = pd.concat((old_data, data.iloc[idx:, :]))
+            updated_data.reset_index().to_csv(file_name, index=False, compression="infer")  # Update
+        else:
+            data.reset_index().to_csv(file_name, index=False, compression="infer")          # Save
+
         if verbose > 1:
-            LOG.info(f"Pandas data {file_name} saved OK")
+            symbol = file_name.parent.name
+            LOG.info(f"Saved {symbol} data:{get_tabs(symbol, prev=12)}[{file_name.stem}] OK")
     except Exception as err:
-        LOG.error(f"ERROR saving pandas data: {file_name}")
+        LOG.error(f"ERROR saving data:\t\t{file_name.parent.name + file_name.stem} "
+                  f"{err.__repr__()} {traceback.print_tb(err.__traceback__)}")
 
 
 def read_pandas_data(file_name):
@@ -149,10 +174,9 @@ def read_pandas_data(file_name):
     return pd.read_csv(file_name, parse_dates=['date'], index_col='date', date_parser=dateparse)
 
 
-async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vantage"):
+async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vantage", verbose=VERBOSE):
     folder_name, file_name = build_path_and_file(symbol, category)
     info_file = build_info_file(folder_name, category)
-    tabs = "\t" * 2 if len(symbol) <= 5 else "\t"
     info = None
 
     try:
@@ -162,31 +186,31 @@ async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vant
             delta = (datetime.now() - data_stored.index[-1]).days
 
             if delta > max_gap:
-                # Retrieve 'delta' days
-                # TODO: retrieve only specific date range
-                data = await query_data(symbol, semaphore, category=category, api="vantage")
+                LOG.info(f"Updating {symbol} data...")
+                # Retrieve only last range (alpha_vantage 100pts)
+                data = await query_data(symbol, semaphore, category=category, api="vantage", outputsize="compact")
                 info, dat = process_vantage_data(data)
 
-                LOG.info(f"Updating {symbol} stock data")
-                save_pandas_data(file_name, dat)
+                save_pandas_data(file_name, dat, update=True, verbose=verbose)
             else:
-                LOG.info(f"Updating {symbol}:{tabs}Ignored. Data available is < {max_gap} days old")
+                LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}Ignored. Data {category} < '{max_gap}d' old")
                 return
         else:
             # Download and save new data
+            LOG.info(f"Updating {symbol} ...")
             data = await query_data(symbol, semaphore, category=category, api=api)
             if data is None:
                 return
             info, dat = process_vantage_data(data)
-            save_pandas_data(file_name, dat)
+            save_pandas_data(file_name, dat, verbose=verbose)
 
         # Save/Update info
         if info:
             await update_stock_info(info_file, info)
 
-        LOG.info(f"Updating {symbol}:{tabs}OK")
+        LOG.info(f"Updating {symbol} data:{get_tabs(symbol, prev=15)}OK")
     except Exception as err:
-        LOG.info(f"Updating {symbol}:{tabs}ERROR: {err.__repr__()} {traceback.print_tb(err.__traceback__)}")
+        LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}ERROR: {err.__repr__()} {traceback.print_tb(err.__traceback__)}")
 
 
 def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage", limit=MAX_CONNECTIONS):

@@ -19,8 +19,10 @@ ROOT = pathlib.Path(__file__).parents[1]
 DATA_FOLDER = ROOT.joinpath("data")
 
 ENV = getenv("ENV", "local")
-MAX_CONNECTIONS = int(getenv("MAX_CONNECTIONS", "10"))
-MIN_SEM_WAIT = int(getenv("MIN_WAIT", "2"))
+MAX_CONNECTIONS = int(getenv("MAX_CONNECTIONS", "5"))
+QUERY_RETRY_LIMIT = int(getenv("QUERY_RETRY_LIMIT", 3))
+MIN_SEM_WAIT = int(getenv("MIN_WAIT", "30"))
+VANTAGE_WAIT = int(getenv("VANTAGE_WAIT", "60"))
 VERBOSE = int(getenv("VERBOSE", "2"))
 
 if ENV == "local":
