@@ -12,19 +12,20 @@ import nest_asyncio
 import pandas as pd
 import traceback
 from datetime import datetime
-from src.alpha_vantage_api import alpha_vantage_query
+from src.alpha_vantage_api import alpha_vantage_query, fx_regex
 from src.utils import LOG
 from src.config import DATA_FOLDER, KEYS_SET, DFT_STOCK_FILE, DFT_STOCK_EXT, DFT_INFO_FILE, DFT_INFO_EXT, \
     DFT_FX_FILE, DFT_FX_EXT, MAX_CONNECTIONS, MIN_SEM_WAIT, HEADERS, VERBOSE
 
 
 clean_names_regex = re.compile("[\w]*$")
+capture_enum_regex = re.compile("^[\d]*\.\s*")
 dateparse = lambda dates: pd.datetime.strptime(dates, '%Y-%m-%d')
 nest_asyncio.apply()
 
 
 def build_path_and_file(symbol, category):
-    if isinstance(symbol, list):
+    if isinstance(symbol, (list, tuple)):
         # FX currencies (from, to):
         folder_name = DATA_FOLDER.joinpath(symbol[0] + "_" + symbol[1])
         file_name = folder_name.joinpath(DFT_FX_FILE + "_" + category + DFT_FX_EXT)
@@ -36,8 +37,8 @@ def build_path_and_file(symbol, category):
     return folder_name, file_name
 
 
-def build_info_file(folder_name):
-    return folder_name.joinpath(DFT_INFO_FILE + DFT_INFO_EXT)
+def build_info_file(folder_name, category):
+    return folder_name.joinpath(DFT_INFO_FILE + "_" + category + DFT_INFO_EXT)
 
 
 async def query_data(symbol, semaphore, category=None, api="vantage", verbose=VERBOSE):
@@ -68,12 +69,17 @@ async def query_data(symbol, semaphore, category=None, api="vantage", verbose=VE
 
 
 def process_vantage_data(data):
-    info = {
-        "symbol": data["Meta Data"]["2. Symbol"],
-        "lastUpdate": data["Meta Data"]["3. Last Refreshed"],
-        "timeZone": data["Meta Data"]["5. Time Zone"]
-    }
-    dat = data["Time Series (Daily)"]
+    metadata = data.get("Meta Data", None)
+    if metadata:
+        try:
+            info = {key.replace(capture_enum_regex.findall(key)[0], ""): val for key, val in metadata.items()}
+        except Exception as err:
+            LOG.ERROR("ERROR cleaning info")
+            print(metadata)
+    else:
+        info = {}
+    data_key = [k for k in data.keys() if k != "Meta Data"][0]      # 'Time Series (Daily)' or 'Time Series FX (Weekly)'
+    dat = data[data_key]
     return info, dat
 
 
@@ -99,10 +105,17 @@ async def read_stock_info(info_file, check=True):
 async def update_stock_info(info_file, info, verbose=VERBOSE):
     try:
         # Clean key names
-        info = {clean_names_regex.findall(key)[0]: val for key, val in info.items()}
-        info.pop('matchScore', None)
+        clean_info = []
+        for key, val in info.items():
+            try:
+                key = key.replace(capture_enum_regex.findall(key)[0], "")
+            except Exception:
+                pass
+            clean_info[key] = val
+
+        clean_info.pop('matchScore', None)
         old_info = await read_stock_info(info_file, check=False)
-        await save_stock_info(info_file, info, old_info=old_info)
+        await save_stock_info(info_file, clean_info, old_info=old_info)
         if verbose > 1:
             LOG.info(f"Stock info {info_file} updated OK")
     except Exception as err:
@@ -134,7 +147,7 @@ def read_pandas_data(file_name):
 
 async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vantage"):
     folder_name, file_name = build_path_and_file(symbol, category)
-    info_file = build_info_file(folder_name)
+    info_file = build_info_file(folder_name, category)
     tabs = "\t" * 2 if len(symbol) <= 5 else "\t"
     info = None
 
@@ -182,7 +195,7 @@ def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage", limit=M
     :param limit:   max number of concurrent connections
     :return:
     """
-    if not isinstance(symbols, list):
+    if not isinstance(symbols, (list, tuple)):
         raise TypeError("symbols must be a list")
     sem = asyncio.Semaphore(value=limit)
     loop = asyncio.get_event_loop()
@@ -219,13 +232,14 @@ def update_info_with_search(symbols=None, verbose=VERBOSE):
     # Build folders list (and create if they don't exist) and file list
     if "stock_folders" not in locals():
         stock_folders, _ = list(zip(*[build_path_and_file(symbol, "any") for symbol in symbols]))
-    info_files = [build_info_file(folder) for folder in stock_folders]
+    info_files = [build_info_file(folder, "daily") for folder in stock_folders]
 
     # Update info
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
         asyncio.gather(*(update_stock_info(info_f, info) for info_f, info in zip(info_files, grp_info)))
     )
+    return grp_info
 
 
 def test_search_symbol():
@@ -236,10 +250,11 @@ def test_search_symbol():
 
 def test_retrieve_stocks():
     symbols = ["AMAT", "AMZN", "ATVI", "GOOG", "MMM", "RNSDF", "XOM"]
-    # BMW
     # ISA: MMM, Blizzard, Alphabet, Applied materias, BASF Diageo, Gilead Johnson&Johnson, Judges Scientific, Nvidia, Pfizer, Rio Tinto, SSE, Walt Disney
     # SIPP: Altria, Amazon, Axa, BHP, BT, Dassault Systemes, Henkel AG&CO, Liberty Global, National Grid, Reach PLC, Renault, Sartorius AG, Starbucks
     problematic = ["RDS.A"]
+
+    symbols = ['']
     retrieve_stock_list(symbols, category="daily", gap=7)
 
 

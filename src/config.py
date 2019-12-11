@@ -21,7 +21,7 @@ DATA_FOLDER = ROOT.joinpath("data")
 ENV = getenv("ENV", "local")
 MAX_CONNECTIONS = int(getenv("MAX_CONNECTIONS", "10"))
 MIN_SEM_WAIT = int(getenv("MIN_WAIT", "2"))
-VERBOSE = int(getenv("VERBOSE", "3"))
+VERBOSE = int(getenv("VERBOSE", "2"))
 
 if ENV == "local":
     LOG_LEVEL = logging.DEBUG
