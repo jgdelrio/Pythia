@@ -33,11 +33,11 @@ def in_ipynb(verbose=VERBOSE):
     try:
         cfg = get_ipython().config
         if isinstance(cfg['IPKernelApp']['parent_appname'], LazyConfigValue):
-            if verbose > 0:
+            if verbose > 2:
                 print("Notebook detected")
             return True
         else:
-            if verbose > 0:
+            if verbose > 2:
                 print("Running in script mode")
             return False
     except NameError:
@@ -101,16 +101,29 @@ class DelayedAssert:
 
 def get_tabs(symbol, prev=7):
     n = len(symbol) + prev
-    if n <= 10:
-        return "\t" * 4
-    elif n <= 15:
-        return "\t" * 3
-    elif n <= 19:
-        return "\t" * 2
-    elif n <= 23:
-        return "\t"
+
+    if in_ipynb():
+        if n <= 15:
+            return "\t" * 4
+        elif n <= 21:
+            return "\t" * 3
+        elif n <= 27:
+            return "\t" * 2
+        elif n <= 33:
+            return "\t"
+        else:
+            return ""
     else:
-        return ""
+        if n <= 15:
+            return "\t" * 4
+        elif n <= 19:
+            return "\t" * 3
+        elif n <= 23:
+            return "\t" * 2
+        elif n <= 27:
+            return "\t"
+        else:
+            return ""
 
 
 LOG = get_logger(name="Pythia", to_stdout=True, level=LOG_LEVEL)

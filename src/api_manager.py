@@ -38,6 +38,20 @@ def build_path_and_file(symbol, category):
     return folder_name, file_name
 
 
+def delta_surpassed(last_date, max_gap, category):
+    now = datetime.now()
+    delta = (now - last_date).days
+
+    if delta > max_gap:
+        if "monthly" in category and ((now.month - last_date.month > 0) or (now.year - last_date.year > 0)):
+            return True
+        elif "weekly" in category and delta > 7:
+            return True
+        else:
+            return True
+    return False
+
+
 def build_info_file(folder_name, category):
     return folder_name.joinpath(DFT_INFO_FILE + "_" + category + DFT_INFO_EXT)
 
@@ -62,11 +76,7 @@ async def query_data(symbol, semaphore, category=None, api="vantage", verbose=VE
                 data = await resp.json()
 
         if api == "vantage":
-            rst = manage_vantage_errors(data, symbol)
-            if rst == "release":
-                semaphore.release()
-                break
-            elif rst == "longWait":
+            if manage_vantage_errors(data, symbol) == "longWait":
                 counter += 1
                 await asyncio.sleep(VANTAGE_WAIT)
             else:
@@ -183,9 +193,9 @@ async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vant
         if folder_name.exists() and file_name.exists():
             # Verify how much must be updated
             data_stored = read_pandas_data(file_name)
-            delta = (datetime.now() - data_stored.index[-1]).days
+            last_date = data_stored.index[-1]
 
-            if delta > max_gap:
+            if delta_surpassed(last_date, max_gap, category):
                 LOG.info(f"Updating {symbol} data...")
                 # Retrieve only last range (alpha_vantage 100pts)
                 data = await query_data(symbol, semaphore, category=category, api="vantage", outputsize="compact")
@@ -193,7 +203,7 @@ async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vant
 
                 save_pandas_data(file_name, dat, update=True, verbose=verbose)
             else:
-                LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}Ignored. Data {category} < '{max_gap}d' old")
+                LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}Ignored. Data {category} < {max_gap}d old")
                 return
         else:
             # Download and save new data
@@ -208,12 +218,13 @@ async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vant
         if info:
             await update_stock_info(info_file, info)
 
-        LOG.info(f"Updating {symbol} data:{get_tabs(symbol, prev=15)}OK")
+        LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}Finished")
     except Exception as err:
         LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}ERROR: {err.__repr__()} {traceback.print_tb(err.__traceback__)}")
 
 
-def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage", limit=MAX_CONNECTIONS):
+def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage",
+                        limit=MAX_CONNECTIONS, verbose=VERBOSE):
     """
     Provided a list of symbols, update the info of the stocks for any stock where there is
     no information in the last (gap) days.
@@ -226,35 +237,47 @@ def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage", limit=M
     if not isinstance(symbols, (list, tuple)):
         raise TypeError("symbols must be a list")
     sem = asyncio.Semaphore(value=limit)
+
+    if isinstance(api, list):
+        tasks = (update_stock(nsymbol, sem, category=category, max_gap=gap, api=napi)
+                 for nsymbol, napi in zip(symbols, api))
+    else:
+        tasks = (update_stock(symbol, sem, category=category, max_gap=gap, api=api) for symbol in symbols)
+
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(
-        asyncio.gather(
-            *(update_stock(symbol, sem, category=category, max_gap=gap, api=api) for symbol in symbols)
-        )
-    )
+    loop.run_until_complete(asyncio.gather(*tasks))
 
 
-def search_symbol(symbols, api="vantage", limit=MAX_CONNECTIONS, verbose=VERBOSE):
+def search_symbol(symbols=None, api="vantage", limit=MAX_CONNECTIONS, verbose=VERBOSE):
+    if symbols == None:
+        print('Function Help:\n' \
+              '\tProvide a list of symbols, references, possible names, ISIN ref, SEDOL ref...\n' \
+              '\t\tex: ["SSE", "GB0007908733"]\n' \
+              '\tFor each entry the function returns up to 10 possible matches with a score\n')
+        return
     if isinstance(symbols, str):
         symbols = [symbols]
 
     sem = asyncio.Semaphore(value=limit)
+
+    if isinstance(api, list):
+        tasks = (query_data(nsymbol, sem, category="search", api=napi, verbose=verbose)
+                 for nsymbol, napi in zip(symbols, api))
+    else:
+        tasks = (query_data(symbol, sem, category="search", api=api, verbose=verbose) for symbol in symbols)
+
     loop = asyncio.get_event_loop()
-    return loop.run_until_complete(
-        asyncio.gather(
-            *(query_data(symbol, sem, category="search", api=api, verbose=verbose) for symbol in symbols)
-        )
-    )
+    return loop.run_until_complete(asyncio.gather(*tasks))
 
 
-def update_info_with_search(symbols=None, verbose=VERBOSE):
+def update_info_with_search(symbols=None, api="vantage", verbose=VERBOSE):
     if symbols is None:
         # Update existing folders (except currencies)
         stock_folders = [x for x in DATA_FOLDER.iterdir() if x.is_dir() and "_" not in x.name]
         symbols = [x.name for x in stock_folders]
 
     # Search symbols
-    grp_info = search_symbol(symbols, api="vantage", verbose=verbose)
+    grp_info = search_symbol(symbols, api=api, verbose=verbose)
     grp_info = [data['bestMatches'][0] for data in grp_info]
 
     # Build folders list (and create if they don't exist) and file list
@@ -280,6 +303,7 @@ def test_retrieve_stocks():
     symbols = ["AMAT", "AMZN", "ATVI", "GOOG", "MMM", "RNSDF", "XOM"]
     # ISA: MMM, Blizzard, Alphabet, Applied materias, BASF Diageo, Gilead Johnson&Johnson, Judges Scientific, Nvidia, Pfizer, Rio Tinto, SSE, Walt Disney
     # SIPP: Altria, Amazon, Axa, BHP, BT, Dassault Systemes, Henkel AG&CO, Liberty Global, National Grid, Reach PLC, Renault, Sartorius AG, Starbucks
+    # ES: ASM Lithography Holding, Bolsas y Mercados ESP, Caixabank, Naturgy Energy, Red Electrica, Endesa, Unibail-Rodamco Se And WFD Uniba
     problematic = ["RDS.A"]
 
     retrieve_stock_list(symbols, category="daily", gap=7)

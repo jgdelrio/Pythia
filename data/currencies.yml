@@ -25,3 +25,10 @@ USDT:
 XRP:
   name: "Ripple"
   type: cryptocurrency
+LTC:
+  name: "Litecoin"
+  type: cryptocurrency
+NEO:
+  name: "NEO"
+  type: cryptocurrency
+
