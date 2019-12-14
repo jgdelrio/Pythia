@@ -111,16 +111,20 @@ async def save_stock_info(info_file, info, old_info=None):
         await f.write(json.dumps(into2write, indent=2).encode('ascii', 'ignore').decode('ascii'))
 
 
-async def read_stock_info(info_file, check=True):
+async def read_info_file(info_file, check=True, verbose=VERBOSE):
     if check:
         if not info_file.exists():
-            raise ValueError(f"ERROR: No info found at {info_file}")
+            LOG.error(f"ERROR: No info found at {info_file}")
 
     if info_file.exists():
         async with aiofiles.open(info_file, "r") as info:
             data = await info.read()
-            return await json.loads(data)
+            if verbose > 1:
+                LOG.info(f"Info file read: {info_file}")
+            return json.loads(data)
     else:
+        if verbose > 1:
+            LOG.warning(f"Info file: {info_file}\tDO NOT EXISTS!")
         return {}
 
 
@@ -136,7 +140,12 @@ async def update_stock_info(info_file, info, verbose=VERBOSE):
             clean_info[key] = val
 
         clean_info.pop('matchScore', None)
-        old_info = await read_stock_info(info_file, check=False)
+        # Read previous info
+        if info_file.exists():
+            old_info = await read_info_file(info_file, check=False, verbose=verbose)
+        else:
+            old_info = {}
+
         await save_stock_info(info_file, clean_info, old_info=old_info)
         if verbose > 1:
             symbol = info_file.parent.name
@@ -291,6 +300,12 @@ def update_info_with_search(symbols=None, api="vantage", verbose=VERBOSE):
         asyncio.gather(*(update_stock_info(info_f, info) for info_f, info in zip(info_files, grp_info)))
     )
     return grp_info
+
+
+def gather_info(files, verbose=VERBOSE):
+    # Read all files requested
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(asyncio.gather(*(read_info_file(fj, check=False, verbose=verbose) for fj in files)))
 
 
 def test_search_symbol():

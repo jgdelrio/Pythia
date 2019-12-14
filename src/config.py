@@ -12,6 +12,7 @@ DFT_STOCK_FILE = "stock_data"
 DFT_STOCK_EXT = ".zip"
 DFT_FX_FILE = "data"
 DFT_FX_EXT = ".zip"
+DFT_CRIPTO_PREFIX = "CRYPTO_"
 DFT_HEADER = ("Content-type", 'text/plain; charset=utf-8')
 DFT_UTC_TS = datetime.utcfromtimestamp(datetime.min.toordinal())
 
