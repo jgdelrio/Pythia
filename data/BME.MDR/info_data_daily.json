@@ -1,7 +1,16 @@
 {
+  "symbol": "BME.MDR",
+  "name": "Bolsas y Mercados Espanoles, Sociedad Holding de Mercados y Sistemas Financieros, S.A.",
+  "type": "Equity",
+  "region": "Madrid",
+  "marketOpen": "09:00",
+  "marketClose": "17:30",
+  "timezone": "UTC+01",
+  "currency": "EUR",
+  "matchScore": "1.0000",
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "BME.MDR",
-  "Last Refreshed": "2019-12-12",
-  "Output Size": "Full size",
+  "Last Refreshed": "2019-12-13",
+  "Output Size": "Compact",
   "Time Zone": "US/Eastern"
 }

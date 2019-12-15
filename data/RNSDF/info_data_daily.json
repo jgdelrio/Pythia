@@ -1,7 +1,15 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "RNSDF",
-  "Last Refreshed": "2019-12-10",
+  "Last Refreshed": "2019-12-13",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern"
+  "Time Zone": "US/Eastern",
+  "symbol": "RNSDF",
+  "name": "Renault SA",
+  "type": "Equity",
+  "region": "United States",
+  "marketOpen": "09:30",
+  "marketClose": "16:00",
+  "timezone": "UTC-05",
+  "currency": "USD"
 }

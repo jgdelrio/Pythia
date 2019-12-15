@@ -2,5 +2,13 @@
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "LAZ",
   "Last Refreshed": "2019-12-13",
-  "Time Zone": "US/Eastern"
+  "Time Zone": "US/Eastern",
+  "symbol": "LAZ",
+  "name": "Lazard Ltd",
+  "type": "Equity",
+  "region": "United States",
+  "marketOpen": "09:30",
+  "marketClose": "16:00",
+  "timezone": "UTC-05",
+  "currency": "USD"
 }

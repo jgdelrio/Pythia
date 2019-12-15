@@ -146,6 +146,6 @@ def manage_vantage_errors(response, symbol):
     elif "Note" in response.keys():
         if response["Note"][:111] == 'Thank you for using Alpha Vantage! Our standard API call frequency ' \
                                      'is 5 calls per minute and 500 calls per day.':
-            LOG.info(f"Retrieving {symbol}:{get_tabs(symbol, prev=12)} Max frequency reached! Waiting...")
+            LOG.info(f"Retrieving {symbol}:{get_tabs(symbol, prev=12)}Max frequency reached! Waiting...")
             return "longWait"
     return None

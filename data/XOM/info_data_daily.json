@@ -1,7 +1,15 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "XOM",
-  "Last Refreshed": "2019-12-11 14:13:10",
+  "Last Refreshed": "2019-12-13",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern"
+  "Time Zone": "US/Eastern",
+  "symbol": "XOM",
+  "name": "Exxon Mobil Corporation",
+  "type": "Equity",
+  "region": "United States",
+  "marketOpen": "09:30",
+  "marketClose": "16:00",
+  "timezone": "UTC-05",
+  "currency": "USD"
 }

@@ -1,7 +1,15 @@
 {
   "Information": "Daily Time Series with Splits and Dividend Events",
   "Symbol": "ATVI",
-  "Last Refreshed": "2019-12-11 15:54:09",
-  "Output Size": "Full size",
-  "Time Zone": "US/Eastern"
+  "Last Refreshed": "2019-12-13",
+  "Output Size": "Compact",
+  "Time Zone": "US/Eastern",
+  "symbol": "ATVI",
+  "name": "Activision Blizzard Inc.",
+  "type": "Equity",
+  "region": "United States",
+  "marketOpen": "09:30",
+  "marketClose": "16:00",
+  "timezone": "UTC-05",
+  "currency": "USD"
 }

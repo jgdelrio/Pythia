@@ -7,12 +7,28 @@ from src.utils import LOG
 
 currency_regex = re.compile(r"\A[A-Z]{3}_[A-Z]{3}")
 crypto_regex = re.compile(r"\A" + DFT_CRIPTO_PREFIX + r"[A-Z]{3,4}_[A-Z]{3}")
+info_data_pattern = DFT_INFO_FILE + r"*" + DFT_INFO_EXT
 FX_UPDATES = (
     ["GBP", "EUR"],
     ["GBP", "USD"],
     ["GBP", "CNY"],
     ["GBP", "INR"],
 )
+
+fx_parameters = {"FirstTimeStamp": "FirstTimeStamp",
+                  "Refreshed": "LastUpdate",
+                  "Zone": "TimeZone",
+                  "Information": "Information"}
+
+share_parameters = {"symbol": "Symbol",
+                    "currency": "Currency",
+                    "name": "Name",
+                    "type": "Type",
+                    "region": "Region",
+                    "FirstTimeStamp": "FirstTimeStamp",
+                    "Last Refreshed": "LastUpdate",
+                    "timezone": "TimeZone",
+                    }
 
 
 def validate_list(sym):
@@ -27,7 +43,7 @@ def get_stock_folders():
     return stock_folders
 
 
-def get_stock_references():
+def get_share_references():
     """Return list of existing stocks"""
     stock_folders = get_stock_folders()
     stock_names = [x.name for x in stock_folders]
@@ -60,7 +76,7 @@ def get_fx_references():
 def get_crypto_references():
     """Return list of existing cryptocurrencies"""
     crypto_folders = get_crypto_folders()
-    crypto_names = [cryp.name for cryp in get_fx_folders()]
+    crypto_names = [cryp.name for cryp in crypto_folders]
     crypto_names.sort()
     return crypto_names, crypto_folders
 
@@ -68,7 +84,7 @@ def get_crypto_references():
 def update_all_stock_data(stocks=None, gap=7):
     """Get all existing stocks and update their info"""
     if stocks is None:
-        stocks, _ = get_stock_references()
+        stocks, _ = get_share_references()
     validate_list(stocks)
     retrieve_stock_list(stocks, category="daily", gap=gap)
     retrieve_stock_list(stocks, category="monthly", gap=gap)
@@ -109,69 +125,71 @@ def test_update_crypto():
 
 
 def map_field(array, field):
-    return list(map(lambda x: x.get(field, None) if x else None, array))
+    return [x.get(field, None) for x in array]
 
 
 def get_fx_table(mode="fx", verbose=VERBOSE):
     if mode == "fx":
         id_refs, id_folders = get_fx_references()
     elif mode == "crypto":
-        id_refs, id_folders = get_fx_references()
-        id_refs = id_refs[5:]
+        id_refs, id_folders = get_crypto_references()
+        id_refs = [k[len(DFT_CRIPTO_PREFIX):] for k in id_refs]
+    return __create_table(zip(id_folders, id_refs), verbose=verbose)
 
-    return __create_table(id_refs, id_folders)
 
+def __create_table(refs, verbose=VERBOSE):
+    rows = []
+    for id_folder, id_refs in refs:
+        from_fx, to_fx = id_refs.split("_")
+        info_files = list(id_folder.glob(info_data_pattern))
 
-def __create_table(id_refs, id_folders):
-    # Full path ref to the info files
-    info_refs = [ref.joinpath(DFT_INFO_FILE + DFT_INFO_EXT) for ref in id_folders]
-    # Read info
-    fx_info = gather_info(info_refs, verbose=verbose)
+        if info_files:
+            for info_ref in info_files:
+                rows.append((from_fx, to_fx, info_ref))
+        else:
+            rows.append((from_fx, to_fx, None))
 
-    # Build columns
-    from_fx, to_fx = zip(*map(lambda x: x.split("_"), id_refs))
+    # Read info from files
+    info = gather_info(map(lambda x: x[2], rows), verbose=verbose)
+    table_dict = {"From": list(map(lambda x: x[0], rows)),
+                  "To": list(map(lambda x: x[1], rows)),
+                  **{val: map_field(info, key) for key, val in fx_parameters.items()}}
 
-    table = pd.DataFrame({"From": from_fx,
-                          "To": to_fx,
-                          "FirstTimeStamp": map_field(fx_info, "FirstTimeStamp"),
-                          "LastUpdate": map_field(fx_info, "Refreshed"),
-                          "TimeZone": map_field(fx_info, "Zone"),
-                          "Information": map_field(fx_info, "Information")})
+    table = pd.DataFrame(table_dict)
     return table
 
 
-def get_crypto_table(verbose=VERBOSE):
-    fx_refs, fx_folders = get_crypto_references()
-    # Full path ref to the info files
-    info_refs = [ref.joinpath(DFT_INFO_FILE + DFT_INFO_EXT) for ref in fx_folders]
-    # Read info
-    fx_info = gather_info(info_refs, verbose=verbose)
-
-    # Build columns
-    from_fx, to_fx = zip(*map(lambda x: x.split("_"), fx_refs))
-
-    table = pd.DataFrame({"From": from_fx,
-                          "To": to_fx,
-                          "FirstTimeStamp": map_field(fx_info, "FirstTimeStamp"),
-                          "LastUpdate": map_field(fx_info, "Refreshed"),
-                          "TimeZone": map_field(fx_info, "Zone"),
-                          "Information": map_field(fx_info, "Information")})
-    return table
-
-
-def get_data_table():
-    # TODO: create table with a classification of existing data
+def get_share_table(verbose=VERBOSE):
     """
     Generates a table with existing symbols, classification, country, currency, folder...
     :return: table
     """
 
+    rows = []
+    for share, id_folder in zip(*get_share_references()):
+        info_files = list(id_folder.glob(info_data_pattern))
 
-    table = pd.DataFrame()
+        if info_files:
+            for info_ref in info_files:
+                rows.append((share, info_ref))
+        else:
+            rows.append((share, None))
+
+    # Read info from files
+    info = gather_info(map(lambda x: x[1], rows), verbose=verbose)
+    table_dict = {
+                  **{val: map_field(info, key) for key, val in share_parameters.items()}}
+
+    table = pd.DataFrame(table_dict)
+    return table
 
 
 if __name__ == "__main__":
     # stocks = ['BAS.DEX']
     # retrieve_stock_list(stocks)
-    get_currency_table(verbose=3)
+
+    # print(get_share_table(verbose=3))
+    # print(get_fx_table(mode="fx", verbose=3))
+    # print(get_fx_table(mode="crypto", verbose=3))
+
     update_all_stock_data(gap=2)

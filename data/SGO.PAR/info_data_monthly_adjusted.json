@@ -2,5 +2,13 @@
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "SGO.PAR",
   "Last Refreshed": "2019-12-13",
-  "Time Zone": "US/Eastern"
+  "Time Zone": "US/Eastern",
+  "symbol": "SGO.PAR",
+  "name": "Compagnie de Saint-Gobain S.A.",
+  "type": "Equity",
+  "region": "Paris",
+  "marketOpen": "09:00",
+  "marketClose": "17:30",
+  "timezone": "UTC+01",
+  "currency": "EUR"
 }

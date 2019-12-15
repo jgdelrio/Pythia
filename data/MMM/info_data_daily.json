@@ -1,4 +1,9 @@
 {
+  "Information": "Daily Prices (open, high, low, close) and Volumes",
+  "Symbol": "MMM",
+  "Last Refreshed": "2019-12-13",
+  "Output Size": "Compact",
+  "Time Zone": "US/Eastern",
   "symbol": "MMM",
   "name": "3M Company",
   "type": "Equity",

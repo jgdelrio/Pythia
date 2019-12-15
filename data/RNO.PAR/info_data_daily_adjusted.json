@@ -1,7 +1,15 @@
 {
   "Information": "Daily Time Series with Splits and Dividend Events",
   "Symbol": "RNO.PAR",
-  "Last Refreshed": "2019-12-12",
-  "Output Size": "Full size",
-  "Time Zone": "US/Eastern"
+  "Last Refreshed": "2019-12-13",
+  "Output Size": "Compact",
+  "Time Zone": "US/Eastern",
+  "symbol": "RNO.PAR",
+  "name": "Renault SA",
+  "type": "Equity",
+  "region": "Paris",
+  "marketOpen": "09:00",
+  "marketClose": "17:30",
+  "timezone": "UTC+01",
+  "currency": "EUR"
 }

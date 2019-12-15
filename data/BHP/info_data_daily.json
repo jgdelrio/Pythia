@@ -1,7 +1,15 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "BHP",
-  "Last Refreshed": "2019-12-12 09:42:34",
-  "Output Size": "Full size",
-  "Time Zone": "US/Eastern"
+  "Last Refreshed": "2019-12-13",
+  "Output Size": "Compact",
+  "Time Zone": "US/Eastern",
+  "symbol": "BHP",
+  "name": "BHP Group",
+  "type": "Equity",
+  "region": "United States",
+  "marketOpen": "09:30",
+  "marketClose": "16:00",
+  "timezone": "UTC-05",
+  "currency": "USD"
 }

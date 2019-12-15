@@ -12,8 +12,9 @@ import nest_asyncio
 import pandas as pd
 import traceback
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from src.alpha_vantage_api import alpha_vantage_query, manage_vantage_errors
-from src.utils import LOG, get_tabs
+from src.utils import LOG, get_tabs, get_index, datetime_format, end_of_week, last_day_of_month
 from src.config import *
 
 
@@ -89,11 +90,20 @@ async def query_data(symbol, semaphore, category=None, api="vantage", verbose=VE
     return data
 
 
+def clean_enumeration(data):
+    if isinstance(data, dict):
+        return {key.replace(get_index(capture_enum_regex.findall(key), 0, ""), ""): val for key, val in data.items()}
+    elif isinstance(data, list):
+        return [c.replace(get_index(capture_enum_regex.findall(c), 0, ""), "") for c in data]
+    else:
+        raise Exception(f"Type of data not supported {type(data)}")
+
+
 def process_vantage_data(data):
     metadata = data.get("Meta Data", None)
     if metadata:
         try:
-            info = {key.replace(capture_enum_regex.findall(key)[0], ""): val for key, val in metadata.items()}
+            info = clean_enumeration(metadata)
         except Exception as err:
             LOG.ERROR(f"ERROR cleaning info: {metadata}")
             info = metadata
@@ -104,49 +114,45 @@ def process_vantage_data(data):
     return info, dat
 
 
-async def save_stock_info(info_file, info, old_info=None):
+async def save_stock_info(info_file, info, old_info=None, create=True):
+    """Save/overwrite info data if previous exists or create is True"""
     into2write = info if old_info is None else {**old_info, **info}     # Select new or merge
-
-    async with aiofiles.open(info_file.as_posix(), mode="w+") as f:
-        await f.write(json.dumps(into2write, indent=2).encode('ascii', 'ignore').decode('ascii'))
+    write = True if (info_file.exists() or create) else False
+    if write:
+        async with aiofiles.open(info_file.as_posix(), mode="w") as f:
+            await f.write(json.dumps(into2write, indent=2).encode('ascii', 'ignore').decode('ascii'))
 
 
 async def read_info_file(info_file, check=True, verbose=VERBOSE):
-    if check:
-        if not info_file.exists():
-            LOG.error(f"ERROR: No info found at {info_file}")
-
+    if not info_file:
+        return {}
     if info_file.exists():
         async with aiofiles.open(info_file, "r") as info:
             data = await info.read()
             if verbose > 1:
-                LOG.info(f"Info file read: {info_file}")
+                LOG.info(f"Info file read:{get_tabs('', prev=15)}{info_file}")
             return json.loads(data)
     else:
+        if check:
+            LOG.error(f"ERROR: No info found at {info_file}")
         if verbose > 1:
             LOG.warning(f"Info file: {info_file}\tDO NOT EXISTS!")
         return {}
 
 
-async def update_stock_info(info_file, info, verbose=VERBOSE):
+async def update_stock_info(info_file, info, create=True, verbose=VERBOSE):
     try:
         # Clean key names
-        clean_info = {}
-        for key, val in info.items():
-            try:
-                key = key.replace(capture_enum_regex.findall(key)[0], "")
-            except Exception:
-                pass
-            clean_info[key] = val
-
+        clean_info = clean_enumeration(info)
         clean_info.pop('matchScore', None)
+
         # Read previous info
         if info_file.exists():
             old_info = await read_info_file(info_file, check=False, verbose=verbose)
         else:
             old_info = {}
 
-        await save_stock_info(info_file, clean_info, old_info=old_info)
+        await save_stock_info(info_file, clean_info, old_info=old_info, create=create)
         if verbose > 1:
             symbol = info_file.parent.name
             LOG.info(f"Updating {symbol} info:{get_tabs(symbol, prev=15)}OK")
@@ -157,7 +163,7 @@ async def update_stock_info(info_file, info, verbose=VERBOSE):
 def clean_pandas_data(dat):
     data = pd.DataFrame.from_dict(dat, orient="index")
     # Apply clean names to columns and index
-    column_names = [c.replace(capture_enum_regex.findall(c)[0], "") for c in data.columns.tolist()]
+    column_names = clean_enumeration(data.columns.tolist())
     data.columns = column_names
     data.index.name = 'date'
     data.sort_index(axis=0, inplace=True, ascending=True)  # Sort by date
@@ -170,10 +176,31 @@ def save_pandas_data(file_name, dat, update=False, verbose=VERBOSE):
 
         if update:
             old_data = read_pandas_data(file_name)
-            last_index = old_data.index[-1]
-            idx = data.index.get_loc(last_index.strftime('%Y-%m-%d')) + 1
+            prior_3, prior_2, prior_1 = old_data.index[-3:]
 
-            updated_data = pd.concat((old_data, data.iloc[idx:, :]))
+            days_step = (prior_2 - prior_3).days
+            if days_step >= 28:
+                # Monthly data
+                if (last_day_of_month(prior_1) - prior_1).days > 0:
+                    old_data.drop(old_data.tail(1).index, inplace=True)
+                next_dt = last_day_of_month(old_data.index[-1] + relativedelta(months=+1))
+            elif days_step == 7:
+                # Weekly data
+                if (end_of_week(prior_1) - prior_1).days > 0:
+                    old_data.drop(old_data.tail(1).index, inplace=True)
+                next_dt = end_of_week(old_data.index[-1] + relativedelta(days=+6))
+            else:
+                # Daily data
+                next_dt = old_data.index[-1] + relativedelta(days=+1)
+
+            # date_format = datetime_format(idx)
+            try:
+                idx = data.index.get_loc(next_dt.strftime("%Y-%m-%d"))
+                updated_data = pd.concat((old_data, data.iloc[idx:, :]))
+            except KeyError:
+                # No new data
+                updated_data = old_data
+
             updated_data.reset_index().to_csv(file_name, index=False, compression="infer")  # Update
         else:
             data.reset_index().to_csv(file_name, index=False, compression="infer")          # Save
@@ -279,6 +306,16 @@ def search_symbol(symbols=None, api="vantage", limit=MAX_CONNECTIONS, verbose=VE
     return loop.run_until_complete(asyncio.gather(*tasks))
 
 
+def find_data(ref, db):
+    idx = ref.parent.name
+    data = [entry for entry in db if entry["symbol"] == idx]
+    if len(data) > 0:
+        return data[0]
+    else:
+        LOG.warning(f"WARNING: Reference {idx} not found")
+        return {}
+
+
 def update_info_with_search(symbols=None, api="vantage", verbose=VERBOSE):
     if symbols is None:
         # Update existing folders (except currencies)
@@ -286,20 +323,27 @@ def update_info_with_search(symbols=None, api="vantage", verbose=VERBOSE):
         symbols = [x.name for x in stock_folders]
 
     # Search symbols
-    grp_info = search_symbol(symbols, api=api, verbose=verbose)
-    grp_info = [data['bestMatches'][0] for data in grp_info]
+    info_from_symbols = search_symbol(symbols, api=api, verbose=verbose)
+    info_from_symbols = [data['bestMatches'][0] for data in info_from_symbols]
+    info_from_symbols = [clean_enumeration(k) for k in info_from_symbols]
 
     # Build folders list (and create if they don't exist) and file list
     if "stock_folders" not in locals():
         stock_folders, _ = list(zip(*[build_path_and_file(symbol, "any") for symbol in symbols]))
-    info_files = [build_info_file(folder, "daily") for folder in stock_folders]
+    info_files = [build_info_file(folder, variation) for folder in stock_folders for variation in INFO_VATIATIONS]
+
+    info_groups = [(info_f, find_data(info_f, info_from_symbols)) for info_f in info_files]
+    # Clean empty groups
+    info_groups = [grp for grp in info_groups if not grp[1] == {}]
 
     # Update info
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
-        asyncio.gather(*(update_stock_info(info_f, info) for info_f, info in zip(info_files, grp_info)))
+        asyncio.gather(*(update_stock_info(file_ref, info,
+                                           create=False,
+                                           verbose=verbose)
+                         for file_ref, info in info_groups))
     )
-    return grp_info
 
 
 def gather_info(files, verbose=VERBOSE):
@@ -325,4 +369,4 @@ def test_retrieve_stocks():
 
 
 if __name__ == "__main__":
-    test_retrieve_stocks()
+    update_info_with_search()

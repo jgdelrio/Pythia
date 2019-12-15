@@ -1,7 +1,15 @@
 {
   "Information": "Daily Time Series with Splits and Dividend Events",
   "Symbol": "BAS.DEX",
-  "Last Refreshed": "2019-12-12",
-  "Output Size": "Full size",
-  "Time Zone": "US/Eastern"
+  "Last Refreshed": "2019-12-13",
+  "Output Size": "Compact",
+  "Time Zone": "US/Eastern",
+  "symbol": "BAS.DEX",
+  "name": "BASF SE",
+  "type": "Equity",
+  "region": "XETRA",
+  "marketOpen": "08:00",
+  "marketClose": "20:00",
+  "timezone": "UTC+01",
+  "currency": "EUR"
 }

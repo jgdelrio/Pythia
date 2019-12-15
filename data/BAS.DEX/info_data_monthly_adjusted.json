@@ -1,6 +1,14 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "BAS.DEX",
-  "Last Refreshed": "2019-12-12",
-  "Time Zone": "US/Eastern"
+  "Last Refreshed": "2019-12-13",
+  "Time Zone": "US/Eastern",
+  "symbol": "BAS.DEX",
+  "name": "BASF SE",
+  "type": "Equity",
+  "region": "XETRA",
+  "marketOpen": "08:00",
+  "marketClose": "20:00",
+  "timezone": "UTC+01",
+  "currency": "EUR"
 }

@@ -3,7 +3,7 @@ import sys
 import inspect
 import logging
 import pathlib
-from datetime import datetime
+from datetime import datetime, timedelta
 from traitlets.config.loader import LazyConfigValue
 
 from src.config import DFT_UTC_TS, LOG_LEVEL, VERBOSE
@@ -124,6 +124,43 @@ def get_tabs(symbol, prev=7):
             return "\t"
         else:
             return ""
+
+
+def get_index(array, index, default=""):
+    try:
+        return array[index]
+    except IndexError:
+        return default
+
+
+def datetime_format(date):
+    if isinstance(date, datetime):
+        return "%Y-%m-%d %H:%M:%S"
+    else:
+        return "%Y-%m-%d"
+
+
+def first_day_of_month(day):
+    return day.replace(day=1)
+
+
+def last_day_of_month(day):
+    next_month = day.replace(day=28) + timedelta(days=4)
+    return next_month - timedelta(days=next_month.day)
+
+
+def start_and_end_of_week(day):
+    start_of_week = day - timedelta(days=day.weekday())
+    end_of_week = start_of_week + timedelta(days=6)
+    return start_of_week, end_of_week
+
+
+def start_of_week(day):
+    return start_and_end_of_week(day)[0]
+
+
+def end_of_week(day):
+    return start_and_end_of_week(day)[1]
 
 
 LOG = get_logger(name="Pythia", to_stdout=True, level=LOG_LEVEL)

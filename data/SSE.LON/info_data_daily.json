@@ -1,7 +1,15 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "SSE.LON",
-  "Last Refreshed": "2019-12-12",
-  "Output Size": "Full size",
-  "Time Zone": "US/Eastern"
+  "Last Refreshed": "2019-12-13",
+  "Output Size": "Compact",
+  "Time Zone": "US/Eastern",
+  "symbol": "SSE.LON",
+  "name": "SSE plc",
+  "type": "Equity",
+  "region": "United Kingdom",
+  "marketOpen": "08:00",
+  "marketClose": "16:30",
+  "timezone": "UTC+00",
+  "currency": "GBP"
 }

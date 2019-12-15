@@ -1,6 +1,14 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "JDG.LON",
-  "Last Refreshed": "2019-12-12",
-  "Time Zone": "US/Eastern"
+  "Last Refreshed": "2019-12-13",
+  "Time Zone": "US/Eastern",
+  "symbol": "JDG.LON",
+  "name": "Judges Scientific plc",
+  "type": "Equity",
+  "region": "United Kingdom",
+  "marketOpen": "08:00",
+  "marketClose": "16:30",
+  "timezone": "UTC+00",
+  "currency": "GBP"
 }

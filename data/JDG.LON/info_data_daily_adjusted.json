@@ -1,7 +1,15 @@
 {
   "Information": "Daily Time Series with Splits and Dividend Events",
   "Symbol": "JDG.LON",
-  "Last Refreshed": "2019-12-12",
-  "Output Size": "Full size",
-  "Time Zone": "US/Eastern"
+  "Last Refreshed": "2019-12-13",
+  "Output Size": "Compact",
+  "Time Zone": "US/Eastern",
+  "symbol": "JDG.LON",
+  "name": "Judges Scientific plc",
+  "type": "Equity",
+  "region": "United Kingdom",
+  "marketOpen": "08:00",
+  "marketClose": "16:30",
+  "timezone": "UTC+00",
+  "currency": "GBP"
 }
