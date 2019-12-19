@@ -1,0 +1,14 @@
+{
+  "Information": "Monthly Adjusted Prices and Volumes",
+  "Symbol": "CABK.MDR",
+  "Last Refreshed": "2019-12-18",
+  "Time Zone": "US/Eastern",
+  "symbol": "CABK.MDR",
+  "name": "CaixaBank, S.A.",
+  "type": "Equity",
+  "region": "Madrid",
+  "marketOpen": "09:00",
+  "marketClose": "17:30",
+  "timezone": "UTC+01",
+  "currency": "EUR"
+}

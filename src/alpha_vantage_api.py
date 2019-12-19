@@ -10,7 +10,8 @@ from src.utils import LOG, get_tabs
 ALPHA_VANTAGE_URI = "https://www.alphavantage.co/query"
 fx_regex = re.compile("^fx_")
 digital_regex = re.compile("^digital_")
-fx_data_regex = re.compile(r"\A[A-Z]{3}_[A-Z]{3}")
+fx_data_regex = re.compile(r"\A[A-Z]{3,4}_[A-Z]{3,4}")
+fx_crypto_regex = re.compile(r"\ACRYPTO_[A-Z]{3,4}_[A-Z]{3,4}")
 
 
 def validate_stock_symbol(symbol):
@@ -26,17 +27,18 @@ def validate_currency_pair(symbol):
 
 
 def get_alpha_vantage_function(category):
+    category = category.lower()
     if category == "daily":
         function = "TIME_SERIES_DAILY"
-    elif category == "daily_adjusted":
+    elif category == "daily-adjusted":
         function = "TIME_SERIES_DAILY_ADJUSTED"
     elif category == "weekly":
         function = "TIME_SERIES_WEEKLY"
-    elif category == "weekly_adjusted":
+    elif category == "weekly-adjusted":
         function = "TIME_SERIES_WEEKLY_ADJUSTED"
     elif category == "monthly":
         function = "TIME_SERIES_MONTHLY"
-    elif category == "monthly_adjusted":
+    elif category == "monthly-adjusted":
         function = "TIME_SERIES_MONTHLY_ADJUSTED"
     elif category in ["fx", "fx_daily"]:
         function = "FX_DAILY"
@@ -48,6 +50,8 @@ def get_alpha_vantage_function(category):
         function = "DIGITAL_CURRENCY_WEEKLY"
     elif category == "digital_monthly":
         function = "DIGITAL_CURRENCY_MONTHLY"
+    elif category == "sector":
+        function = "SECTOR"
     else:
         raise ValueError(f"invalid category {category}")
     return function
@@ -57,8 +61,9 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
     url = ALPHA_VANTAGE_URI
     datatype = "json" if datatype is None else datatype             # Valid: csv, json
     output_size = "full" if output_size is None else output_size    # Valid: full, compact (only 100 points)
+    category = category.lower()
 
-    if category in ["daily", "daily_adjusted", "weekly", "weekly_adjusted", "monthly", "monthly_adjusted"]:
+    if category in ["daily", "daily-adjusted", "weekly", "weekly-adjusted", "monthly", "monthly-adjusted"]:
         validate_stock_symbol(symbol)
         # Retrieval of daily time series
         function = get_alpha_vantage_function(category)
@@ -101,6 +106,7 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
             function = get_alpha_vantage_function(category)
             params = {"function": function, "from_symbol": from_crrn, "to_symbol": to_crrn,
                       "outputsize": output_size, "datatype": datatype, "apikey": key}
+
     elif category in ["digital", "digital_fx"] or bool(digital_regex.match(category)):
         # Digital requires two values, the symbol and the market
         if isinstance(symbol, dict):        # Process dict
@@ -109,7 +115,7 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
             symbol, market = symbol["symbol"], symbol["market"]
 
         elif isinstance(symbol, str):
-            if fx_data_regex.match(symbol):
+            if fx_crypto_regex.match(symbol):
                 symbol, market = symbol.split("_")
             else:
                 raise ValueError("Not valid values found")
@@ -132,6 +138,10 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
             function = get_alpha_vantage_function(category)
             params = {"function": function, "symbol": symbol, "market": market,
                       "outputsize": output_size, "datatype": datatype, "apikey": key}
+    elif category == "sector":
+        function = get_alpha_vantage_function(category)
+        params = {"function": function, "apikey": key}
+
     else:
         raise Exception(f"Category {category} not found")
 

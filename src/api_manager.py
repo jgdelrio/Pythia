@@ -21,7 +21,7 @@ from src.config import *
 nest_asyncio.apply()
 # RegExp
 clean_names_regex = re.compile("[\w]*$")
-capture_enum_regex = re.compile("^[\d]*\.\s*")
+capture_enum_regex = re.compile("^[\w]*\.\s*")
 # Functions & Filtering
 dateparse = lambda dates: pd.datetime.strptime(dates, '%Y-%m-%d')
 
@@ -29,7 +29,11 @@ dateparse = lambda dates: pd.datetime.strptime(dates, '%Y-%m-%d')
 def build_path_and_file(symbol, category):
     if isinstance(symbol, (list, tuple)):
         # FX currencies (from, to):
-        folder_name = DATA_FOLDER.joinpath(symbol[0] + "_" + symbol[1])
+        if "digital_" in category:
+            subfolder = "CRYPTO_" + symbol[0] + "_" + symbol[1]
+        else:
+            subfolder = symbol[0] + "_" + symbol[1]
+        folder_name = DATA_FOLDER.joinpath(subfolder)
         file_name = folder_name.joinpath(DFT_FX_FILE + "_" + category + DFT_FX_EXT)
     else:
         folder_name = DATA_FOLDER.joinpath(symbol)
@@ -100,6 +104,7 @@ def clean_enumeration(data):
 
 
 def process_vantage_data(data):
+    """Receives the data as a dictionary of info + values and return the two independent dictionaries"""
     metadata = data.get("Meta Data", None)
     if metadata:
         try:
@@ -161,44 +166,32 @@ async def update_stock_info(info_file, info, create=True, verbose=VERBOSE):
 
 
 def clean_pandas_data(dat):
-    data = pd.DataFrame.from_dict(dat, orient="index")
-    # Apply clean names to columns and index
-    column_names = clean_enumeration(data.columns.tolist())
-    data.columns = column_names
-    data.index.name = 'date'
-    data.sort_index(axis=0, inplace=True, ascending=True)  # Sort by date
+    """Receives a dictionary of data, transform the dict into a pandas DataFrame and clean the column names"""
+    try:
+        data = pd.DataFrame.from_dict(dat, orient="index")
+        # Apply clean names to columns and index
+        column_names = clean_enumeration(data.columns.tolist())
+        data.columns = column_names
+        data.index.name = 'date'
+        data.sort_index(axis=0, inplace=True, ascending=True)  # Sort by date
+    except Exception as err:
+        LOG.error(f"Error cleaning dataset: {err}")
+        data = None
     return data
 
 
-def save_pandas_data(file_name, dat, update=False, verbose=VERBOSE):
+def save_pandas_data(file_name, dat, old_data=None, verbose=VERBOSE):
     try:
         data = clean_pandas_data(dat)
 
-        if update:
-            old_data = read_pandas_data(file_name)
-            prior_3, prior_2, prior_1 = old_data.index[-3:]
-
-            days_step = (prior_2 - prior_3).days
-            if days_step >= 28:
-                # Monthly data
-                if (last_day_of_month(prior_1) - prior_1).days > 0:
-                    old_data.drop(old_data.tail(1).index, inplace=True)
-                next_dt = last_day_of_month(old_data.index[-1] + relativedelta(months=+1))
-            elif days_step == 7:
-                # Weekly data
-                if (end_of_week(prior_1) - prior_1).days > 0:
-                    old_data.drop(old_data.tail(1).index, inplace=True)
-                next_dt = end_of_week(old_data.index[-1] + relativedelta(days=+6))
-            else:
-                # Daily data
-                next_dt = old_data.index[-1] + relativedelta(days=+1)
-
-            # date_format = datetime_format(idx)
+        if old_data is not None:
             try:
-                idx = data.index.get_loc(next_dt.strftime("%Y-%m-%d"))
-                updated_data = pd.concat((old_data, data.iloc[idx:, :]))
-            except KeyError:
-                # No new data
+                # Avoid the last index as it may contain an incomplete week or month
+                last_dt = old_data.index[-2]
+                idx = data.index.get_loc(last_dt.strftime("%Y-%m-%d"))
+                updated_data = pd.concat((old_data.iloc[:-2, :], data.iloc[idx:, :]), axis=0)
+            except KeyError as err:
+                LOG.error(f"Error updating the data: {err}")
                 updated_data = old_data
 
             updated_data.reset_index().to_csv(file_name, index=False, compression="infer")  # Update
@@ -237,13 +230,15 @@ async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vant
                 data = await query_data(symbol, semaphore, category=category, api="vantage", outputsize="compact")
                 info, dat = process_vantage_data(data)
 
-                save_pandas_data(file_name, dat, update=True, verbose=verbose)
+                save_pandas_data(file_name, dat, old_data=data_stored, verbose=verbose)
             else:
-                LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}Ignored. Data {category} < {max_gap}d old")
+                if verbose > 1:
+                    LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}Ignored. Data {category} < {max_gap}d old")
                 return
         else:
             # Download and save new data
-            LOG.info(f"Updating {symbol} ...")
+            if verbose > 1:
+                LOG.info(f"Updating {symbol} ...")
             data = await query_data(symbol, semaphore, category=category, api=api)
             if data is None:
                 return
@@ -254,7 +249,8 @@ async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vant
         if info:
             await update_stock_info(info_file, info)
 
-        LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}Finished")
+        if verbose > 1:
+            LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}Finished")
     except Exception as err:
         LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}ERROR: {err.__repr__()} {traceback.print_tb(err.__traceback__)}")
 
@@ -275,7 +271,7 @@ def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage",
     sem = asyncio.Semaphore(value=limit)
 
     if isinstance(api, list):
-        tasks = (update_stock(nsymbol, sem, category=category, max_gap=gap, api=napi)
+        tasks = (update_stock(nsymbol, sem, category=category, max_gap=gap, api=napi, verbose=verbose)
                  for nsymbol, napi in zip(symbols, api))
     else:
         tasks = (update_stock(symbol, sem, category=category, max_gap=gap, api=api) for symbol in symbols)
@@ -363,7 +359,7 @@ def test_retrieve_stocks():
     # ISA: MMM, Blizzard, Alphabet, Applied materias, BASF Diageo, Gilead Johnson&Johnson, Judges Scientific, Nvidia, Pfizer, Rio Tinto, SSE, Walt Disney
     # SIPP: Altria, Amazon, Axa, BHP, BT, Dassault Systemes, Henkel AG&CO, Liberty Global, National Grid, Reach PLC, Renault, Sartorius AG, Starbucks
     # ES: ASM Lithography Holding, Bolsas y Mercados ESP, Caixabank, Naturgy Energy, Red Electrica, Endesa, Unibail-Rodamco Se And WFD Uniba
-    problematic = ["RDS.A"]
+    # TODO: Indeces ["ES0SI0000005", "EU0009658145", "GB0001383545", "FR0003500008"]
 
     retrieve_stock_list(symbols, category="daily", gap=7)
 

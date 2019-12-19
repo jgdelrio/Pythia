@@ -13,12 +13,13 @@ DFT_STOCK_EXT = ".zip"
 DFT_FX_FILE = "data"
 DFT_FX_EXT = ".zip"
 DFT_CRIPTO_PREFIX = "CRYPTO_"
-INFO_VATIATIONS = ["daily", "daily_adjusted", "weekly", "weekly_adjusted", "monthly", "monthly_adjusted"]
+INFO_VATIATIONS = ["daily", "daily-adjusted", "weekly", "weekly-adjusted", "monthly", "monthly-adjusted"]
 DFT_HEADER = ("Content-type", 'text/plain; charset=utf-8')
 DFT_UTC_TS = datetime.utcfromtimestamp(datetime.min.toordinal())
 
 ROOT = pathlib.Path(__file__).parents[1]
 DATA_FOLDER = ROOT.joinpath("data")
+LOG_FOLDER = ROOT.joinpath("logs")
 
 ENV = getenv("ENV", "local")
 MAX_CONNECTIONS = int(getenv("MAX_CONNECTIONS", "5"))

@@ -18,7 +18,7 @@ def test_get_alpha_vantage_function(data_in, expected):
 
 
 ALPHA_VANTAGE_QUERY_DATA = (
-    ["MMM", "daily_adjusted", None, None, EXPECTED_URL_API,
+    ["MMM", "daily-adjusted", None, None, EXPECTED_URL_API,
      {'function': 'TIME_SERIES_DAILY_ADJUSTED', 'symbol': 'MMM', 'outputsize': 'full',
       'datatype': 'json', 'apikey': 'demo_key'}],
     [["EUR", "GBP"], "fx_exchange", "compact", "csv", EXPECTED_URL_API,

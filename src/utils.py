@@ -6,11 +6,13 @@ import pathlib
 from datetime import datetime, timedelta
 from traitlets.config.loader import LazyConfigValue
 
-from src.config import DFT_UTC_TS, LOG_LEVEL, VERBOSE
+from src.config import DFT_UTC_TS, LOG_LEVEL, LOG_FOLDER, VERBOSE
 
 
-def get_logger(name="haar_training", to_stdout=False, level=LOG_LEVEL):
+def get_logger(name="Pythia", to_stdout=False, level=LOG_LEVEL):
     """Creates a logger with the given name"""
+    log_file = LOG_FOLDER.joinpath("name" + ".log")
+    # TODO: Print to file as well and receive verbose level in the method
     logger = logging.getLogger(name)
     logger.setLevel(level)
     if to_stdout:

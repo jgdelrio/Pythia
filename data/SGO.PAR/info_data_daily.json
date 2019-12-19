@@ -1,8 +1,8 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "SGO.PAR",
-  "Last Refreshed": "2019-12-13",
-  "Output Size": "Full size",
+  "Last Refreshed": "2019-12-18",
+  "Output Size": "Compact",
   "Time Zone": "US/Eastern",
   "symbol": "SGO.PAR",
   "name": "Compagnie de Saint-Gobain S.A.",

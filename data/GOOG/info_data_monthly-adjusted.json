@@ -1,0 +1,14 @@
+{
+  "Information": "Monthly Adjusted Prices and Volumes",
+  "Symbol": "GOOG",
+  "Last Refreshed": "2019-12-18",
+  "Time Zone": "US/Eastern",
+  "symbol": "GOOG",
+  "name": "Alphabet Inc.",
+  "type": "Equity",
+  "region": "United States",
+  "marketOpen": "09:30",
+  "marketClose": "16:00",
+  "timezone": "UTC-05",
+  "currency": "USD"
+}

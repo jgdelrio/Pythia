@@ -1,0 +1,8 @@
+{
+  "Information": "Forex Daily Prices (open, high, low, close)",
+  "From Symbol": "GBP",
+  "To Symbol": "CNY",
+  "Output Size": "Full size",
+  "Last Refreshed": "2019-12-18 22:50:00",
+  "Time Zone": "UTC"
+}
