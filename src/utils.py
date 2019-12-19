@@ -142,6 +142,14 @@ def datetime_format(date):
         return "%Y-%m-%d"
 
 
+def ts2datetime(ts):
+    return ts.strftime("%Y-%m-%dT%H:%M:%S")              #  '1999-12-13T00:00:00'
+
+
+def datetime2ts(dt):
+    return datetime.strptime(dt, "%Y-%m-%dT%H:%M:%S")
+
+
 def first_day_of_month(day):
     return day.replace(day=1)
 
@@ -163,6 +171,22 @@ def start_of_week(day):
 
 def end_of_week(day):
     return start_and_end_of_week(day)[1]
+
+
+def add_first_ts(info, first_date):
+    """"""
+    if not isinstance(info, dict):
+        raise TypeError(f"info must be a dict, not {type(info)}")
+    if not isinstance(first_date, datetime):
+        LOG.error(f"first_date must be a datetime, not {type(first_date)}")
+        return info
+
+    if "FirstTimeStamp" in info.keys():
+        prev_first_ts = info["FirstTimeStamp"]
+        first_date = prev_first_ts if prev_first_ts <= first_date else first_date
+
+    info["FirstTimeStamp"] = ts2datetime(first_date)
+    return info
 
 
 LOG = get_logger(name="Pythia", to_stdout=True, level=LOG_LEVEL)

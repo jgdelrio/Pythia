@@ -10,7 +10,8 @@
   "matchScore": "1.0000",
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "BME.MDR",
-  "Last Refreshed": "2019-12-13",
+  "Last Refreshed": "2019-12-19",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern"
+  "Time Zone": "US/Eastern",
+  "FirstTimeStamp": "2006-07-14T00:00:00"
 }

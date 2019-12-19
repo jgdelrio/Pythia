@@ -1,7 +1,7 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "BHP",
-  "Last Refreshed": "2019-12-18",
+  "Last Refreshed": "2019-12-19 13:18:51",
   "Time Zone": "US/Eastern",
   "symbol": "BHP",
   "name": "BHP Group",
@@ -10,5 +10,6 @@
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "currency": "USD"
+  "currency": "USD",
+  "FirstTimeStamp": "2000-01-31T00:00:00"
 }

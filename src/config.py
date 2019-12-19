@@ -39,6 +39,28 @@ HEADERS = {
                    'Chrome/45.0.2454.101 Safari/537.36'),
 }
 
+share_parameters = {
+    "currency": "Currency",
+    "name": "Name",
+    "type": "Type",
+    "region": "Region",
+    "FirstTimeStamp": "FirstTimeStamp",
+    "Last Refreshed": "LastUpdate",
+    "timezone": "TimeZone",
+    }
+
+fx_parameters = {
+    "FirstTimeStamp": "FirstTimeStamp",
+    "Last Refreshed": "LastUpdate",
+    "Time Zone": "TimeZone",
+    "Information": "Information"}
+
+crypto_parameters = {
+    "FirstTimeStamp": "FirstTimeStamp",
+    "Last Refreshed": "LastUpdate",
+    "Time Zone": "TimeZone",
+    "Information": "Information"}
+
 __FILE_KEYS = ROOT.joinpath("keys.yml")
 __FILE_CURRENCIES = DATA_FOLDER.joinpath("currencies.yml")
 

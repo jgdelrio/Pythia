@@ -1,7 +1,7 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "CS.PAR",
-  "Last Refreshed": "2019-12-13",
+  "Last Refreshed": "2019-12-19",
   "Output Size": "Compact",
   "Time Zone": "US/Eastern",
   "symbol": "CS.PAR",
@@ -11,5 +11,6 @@
   "marketOpen": "09:00",
   "marketClose": "17:30",
   "timezone": "UTC+01",
-  "currency": "EUR"
+  "currency": "EUR",
+  "FirstTimeStamp": "2000-01-03T00:00:00"
 }

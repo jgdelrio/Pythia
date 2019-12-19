@@ -2,7 +2,8 @@
   "Information": "Forex Daily Prices (open, high, low, close)",
   "From Symbol": "GBP",
   "To Symbol": "USD",
-  "Output Size": "Full size",
-  "Last Refreshed": "2019-12-18 23:25:00",
-  "Time Zone": "UTC"
+  "Output Size": "Compact",
+  "Last Refreshed": "2019-12-19 22:20:00",
+  "Time Zone": "UTC",
+  "FirstTimeStamp": "2001-12-03T00:00:00"
 }

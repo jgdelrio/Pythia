@@ -1,7 +1,7 @@
 {
   "Information": "Monthly Prices (open, high, low, close) and Volumes",
   "Symbol": "CS.PAR",
-  "Last Refreshed": "2019-12-18",
+  "Last Refreshed": "2019-12-19",
   "Time Zone": "US/Eastern",
   "symbol": "CS.PAR",
   "name": "AXA SA",
@@ -10,5 +10,6 @@
   "marketOpen": "09:00",
   "marketClose": "17:30",
   "timezone": "UTC+01",
-  "currency": "EUR"
+  "currency": "EUR",
+  "FirstTimeStamp": "2000-02-29T00:00:00"
 }

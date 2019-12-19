@@ -1,7 +1,7 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "SSE.LON",
-  "Last Refreshed": "2019-12-18",
+  "Last Refreshed": "2019-12-19",
   "Time Zone": "US/Eastern",
   "symbol": "SSE.LON",
   "name": "SSE plc",
@@ -10,5 +10,6 @@
   "marketOpen": "08:00",
   "marketClose": "16:30",
   "timezone": "UTC+00",
-  "currency": "GBP"
+  "currency": "GBP",
+  "FirstTimeStamp": "2000-01-31T00:00:00"
 }

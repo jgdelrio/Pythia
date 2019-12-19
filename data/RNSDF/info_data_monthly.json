@@ -1,7 +1,7 @@
 {
   "Information": "Monthly Prices (open, high, low, close) and Volumes",
   "Symbol": "RNSDF",
-  "Last Refreshed": "2019-12-17",
+  "Last Refreshed": "2019-12-18",
   "Time Zone": "US/Eastern",
   "symbol": "RNSDF",
   "name": "Renault SA",
@@ -10,5 +10,6 @@
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "currency": "USD"
+  "currency": "USD",
+  "FirstTimeStamp": "2007-08-31T00:00:00"
 }

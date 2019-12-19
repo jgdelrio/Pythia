@@ -1,7 +1,7 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "XOM",
-  "Last Refreshed": "2019-12-18",
+  "Last Refreshed": "2019-12-19 13:04:26",
   "Output Size": "Compact",
   "Time Zone": "US/Eastern",
   "symbol": "XOM",
@@ -11,5 +11,6 @@
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "currency": "USD"
+  "currency": "USD",
+  "FirstTimeStamp": "1999-12-07T00:00:00"
 }

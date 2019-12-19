@@ -12,9 +12,8 @@ import nest_asyncio
 import pandas as pd
 import traceback
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
 from src.alpha_vantage_api import alpha_vantage_query, manage_vantage_errors
-from src.utils import LOG, get_tabs, get_index, datetime_format, end_of_week, last_day_of_month
+from src.utils import LOG, get_tabs, get_index, add_first_ts
 from src.config import *
 
 
@@ -190,11 +189,9 @@ def save_pandas_data(file_name, dat, old_data=None, verbose=VERBOSE):
                 last_dt = old_data.index[-2]
                 idx = data.index.get_loc(last_dt.strftime("%Y-%m-%d"))
                 updated_data = pd.concat((old_data.iloc[:-2, :], data.iloc[idx:, :]), axis=0)
+                updated_data.reset_index().to_csv(file_name, index=False, compression="infer")  # Update
             except KeyError as err:
                 LOG.error(f"Error updating the data: {err}")
-                updated_data = old_data
-
-            updated_data.reset_index().to_csv(file_name, index=False, compression="infer")  # Update
         else:
             data.reset_index().to_csv(file_name, index=False, compression="infer")          # Save
 
@@ -222,13 +219,19 @@ async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vant
         if folder_name.exists() and file_name.exists():
             # Verify how much must be updated
             data_stored = read_pandas_data(file_name)
+            first_date = data_stored.index[0]
             last_date = data_stored.index[-1]
 
             if delta_surpassed(last_date, max_gap, category):
                 LOG.info(f"Updating {symbol} data...")
                 # Retrieve only last range (alpha_vantage 100pts)
                 data = await query_data(symbol, semaphore, category=category, api="vantage", outputsize="compact")
+                if data in [None, {}]:
+                    LOG.WARNING(f"No data received for {symbol}")
+                    return
+
                 info, dat = process_vantage_data(data)
+                info = add_first_ts(info, first_date)
 
                 save_pandas_data(file_name, dat, old_data=data_stored, verbose=verbose)
             else:
@@ -240,8 +243,10 @@ async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vant
             if verbose > 1:
                 LOG.info(f"Updating {symbol} ...")
             data = await query_data(symbol, semaphore, category=category, api=api)
-            if data is None:
+            if data in [None, {}]:
+                LOG.WARNING(f"No data received for {symbol}")
                 return
+
             info, dat = process_vantage_data(data)
             save_pandas_data(file_name, dat, verbose=verbose)
 

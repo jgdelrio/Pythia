@@ -1,7 +1,7 @@
 {
   "Information": "Monthly Prices (open, high, low, close) and Volumes",
   "Symbol": "JDG.LON",
-  "Last Refreshed": "2019-12-18",
+  "Last Refreshed": "2019-12-19",
   "Time Zone": "US/Eastern",
   "symbol": "JDG.LON",
   "name": "Judges Scientific plc",
@@ -10,5 +10,6 @@
   "marketOpen": "08:00",
   "marketClose": "16:30",
   "timezone": "UTC+00",
-  "currency": "GBP"
+  "currency": "GBP",
+  "FirstTimeStamp": "2003-02-28T00:00:00"
 }

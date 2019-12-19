@@ -1,7 +1,7 @@
 {
   "Information": "Daily Time Series with Splits and Dividend Events",
   "Symbol": "NVDA",
-  "Last Refreshed": "2019-12-18",
+  "Last Refreshed": "2019-12-19 13:15:14",
   "Output Size": "Compact",
   "Time Zone": "US/Eastern",
   "symbol": "NVDA",
@@ -11,5 +11,6 @@
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "currency": "USD"
+  "currency": "USD",
+  "FirstTimeStamp": "1999-12-09T00:00:00"
 }
