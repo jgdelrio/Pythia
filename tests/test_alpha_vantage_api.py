@@ -5,15 +5,16 @@ from src.utils import DelayedAssert
 
 
 EXPECTED_URL_API = "https://www.alphavantage.co/query"
-GET_ALPHA_VANTAGE_FUNCTION_DATA = (["weekly", "TIME_SERIES_WEEKLY"],
-                                   ["fx", "FX_DAILY"],
-                                   ["fx_daily", "FX_DAILY"],
-                                   ["fx_monthly", "FX_MONTHLY"])
+GET_API_FUNCTION_DATA = (
+    ["weekly", "TIME_SERIES_WEEKLY"],
+    ["fx", "FX_DAILY"],
+    ["fx_daily", "FX_DAILY"],
+    ["fx_monthly", "FX_MONTHLY"])
 
 
-@pytest.mark.parametrize("data_in, expected", GET_ALPHA_VANTAGE_FUNCTION_DATA)
-def test_get_alpha_vantage_function(data_in, expected):
-    output = get_alpha_vantage_function(data_in)
+@pytest.mark.parametrize("data_in, expected", GET_API_FUNCTION_DATA)
+def test_get_api_function(data_in, expected):
+    output = get_api_function(data_in)
     assert_that(output, equal_to(expected), f"Alpha_vantage_function error")
 
 

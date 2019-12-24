@@ -12,9 +12,10 @@ import nest_asyncio
 import pandas as pd
 import traceback
 from datetime import datetime
+from src.config import *
+from src.crawler_semaphore import SemaphoreController
 from src.alpha_vantage_api import alpha_vantage_query, manage_vantage_errors
 from src.utils import LOG, get_tabs, get_index, add_first_ts
-from src.config import *
 
 
 nest_asyncio.apply()
@@ -23,11 +24,12 @@ clean_names_regex = re.compile("[\w]*$")
 capture_enum_regex = re.compile("^[\w]*\.\s*")
 # Functions & Filtering
 dateparse = lambda dates: pd.datetime.strptime(dates, '%Y-%m-%d')
+semaphore_controller = SemaphoreController()
 
 
 def build_path_and_file(symbol, category):
     if isinstance(symbol, (list, tuple)):
-        # FX currencies (from, to):
+        # FX currencies (from, to) and digital currencies:
         if "digital_" in category:
             subfolder = "CRYPTO_" + symbol[0] + "_" + symbol[1]
         else:
@@ -35,6 +37,7 @@ def build_path_and_file(symbol, category):
         folder_name = DATA_FOLDER.joinpath(subfolder)
         file_name = folder_name.joinpath(DFT_FX_FILE + "_" + category + DFT_FX_EXT)
     else:
+        # Shares & stocks
         folder_name = DATA_FOLDER.joinpath(symbol)
         file_name = folder_name.joinpath(DFT_STOCK_FILE + "_" + category + DFT_STOCK_EXT)
 
@@ -60,10 +63,12 @@ def build_info_file(folder_name, category):
     return folder_name.joinpath(DFT_INFO_FILE + "_" + category + DFT_INFO_EXT)
 
 
-async def query_data(symbol, semaphore, category=None, api="vantage", verbose=VERBOSE, **kwargs):
+async def query_data(symbol, category=None, api="vantage", verbose=VERBOSE, **kwargs):
     if category is None:
         raise ValueError("Please provide a valid category in the parameters")
-    await semaphore.acquire()
+    # Get semaphore
+    semaphore_controller.get_semaphore(api)
+
     if verbose > 2:
         LOG.info("Successfully acquired the semaphore")
 
@@ -89,7 +94,8 @@ async def query_data(symbol, semaphore, category=None, api="vantage", verbose=VE
     await asyncio.sleep(MIN_SEM_WAIT)
     if verbose > 2:
         LOG.info("Releasing Semaphore")
-    semaphore.release()
+    # Release semaphore
+    semaphore_controller.release_semaphore(api)
     return data
 
 
@@ -210,7 +216,23 @@ def read_pandas_data(file_name):
     return pd.read_csv(file_name, parse_dates=['date'], index_col='date', date_parser=dateparse)
 
 
-async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vantage", verbose=VERBOSE):
+def load_shares_data(symbols, period="daily"):
+    unique_value = False
+    if period not in INFO_VATIATIONS:
+        raise ValueError(f"The period {period} is not supported. Please select one among {INFO_VATIATIONS}")
+    if isinstance(symbols, str):
+        unique_value = True
+        symbols = [symbols]
+
+    folders, files = zip(*[build_path_and_file(symbol, period) for symbol in symbols])
+    data = [read_pandas_data(file_name) for file_name in files]
+    if unique_value:
+        return data[0]
+    else:
+        return data
+
+
+async def update_stock(symbol, category="daily", max_gap=0, api="vantage", verbose=VERBOSE):
     folder_name, file_name = build_path_and_file(symbol, category)
     info_file = build_info_file(folder_name, category)
     info = None
@@ -225,7 +247,7 @@ async def update_stock(symbol, semaphore, category="daily", max_gap=0, api="vant
             if delta_surpassed(last_date, max_gap, category):
                 LOG.info(f"Updating {symbol} data...")
                 # Retrieve only last range (alpha_vantage 100pts)
-                data = await query_data(symbol, semaphore, category=category, api="vantage", outputsize="compact")
+                data = await query_data(symbol, category=category, api="vantage", outputsize="compact")
                 if data in [None, {}]:
                     LOG.WARNING(f"No data received for {symbol}")
                     return
@@ -273,13 +295,12 @@ def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage",
     """
     if not isinstance(symbols, (list, tuple)):
         raise TypeError("symbols must be a list")
-    sem = asyncio.Semaphore(value=limit)
 
     if isinstance(api, list):
-        tasks = (update_stock(nsymbol, sem, category=category, max_gap=gap, api=napi, verbose=verbose)
+        tasks = (update_stock(nsymbol, category=category, max_gap=gap, api=napi, verbose=verbose)
                  for nsymbol, napi in zip(symbols, api))
     else:
-        tasks = (update_stock(symbol, sem, category=category, max_gap=gap, api=api) for symbol in symbols)
+        tasks = (update_stock(symbol, category=category, max_gap=gap, api=api) for symbol in symbols)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(asyncio.gather(*tasks))
@@ -370,4 +391,5 @@ def test_retrieve_stocks():
 
 
 if __name__ == "__main__":
-    update_info_with_search()
+    # update_info_with_search()
+    load_shares_data("AMZN")

@@ -1,10 +1,10 @@
 {
-  "Information": "Monthly Prices and Volumes for Digital Currency",
+  "Information": "Daily Prices and Volumes for Digital Currency",
   "Digital Currency Code": "XRP",
   "Digital Currency Name": "Ripple",
   "Market Code": "GBP",
   "Market Name": "British Pound Sterling",
   "Last Refreshed": "2019-12-24 00:00:00",
   "Time Zone": "UTC",
-  "FirstTimeStamp": "2018-06-30T00:00:00"
+  "FirstTimeStamp": "2018-05-04T00:00:00"
 }

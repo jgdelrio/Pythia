@@ -95,14 +95,15 @@ def update_all_fx_data(fx_pairs=None, gap=7, verbose=VERBOSE, v=None):
     LOG.info("FX update finished!")
 
 
-def update_all_crypto_data(crypto_pairs=None, gap=7):
+def update_all_crypto_data(crypto_pairs=None, gap=7, verbose=VERBOSE):
     """Get all existing cryptocurrencies and update their info"""
     if crypto_pairs is None:
         crypto_pairs, _ = get_crypto_references()
     validate_list(crypto_pairs)
     validate_list(crypto_pairs[0])
-    retrieve_stock_list(crypto_pairs, category="digital_daily", gap=gap)
-    retrieve_stock_list(crypto_pairs, category="digital_monthly", gap=gap)
+
+    retrieve_stock_list(crypto_pairs, category="digital_daily", gap=gap, verbose=verbose)
+    retrieve_stock_list(crypto_pairs, category="digital_monthly", gap=gap, verbose=verbose)
     LOG.info("Crypto update finished!")
 
 

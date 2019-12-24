@@ -1,5 +1,7 @@
 """
-Alpah Vantage End-points and Parameters
+Alpha Vantage End-points and Parameters
+
+Documentation:   https://www.alphavantage.co/documentation/
 """
 
 import re
@@ -26,7 +28,7 @@ def validate_currency_pair(symbol):
         raise TypeError("Currency symbol must be a list of two elements")
 
 
-def get_alpha_vantage_function(category):
+def get_api_function(category):
     category = category.lower()
     if category == "daily":
         function = "TIME_SERIES_DAILY"
@@ -66,7 +68,7 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
     if category in ["daily", "daily-adjusted", "weekly", "weekly-adjusted", "monthly", "monthly-adjusted"]:
         validate_stock_symbol(symbol)
         # Retrieval of daily time series
-        function = get_alpha_vantage_function(category)
+        function = get_api_function(category)
 
         params = {"function": function, "symbol": symbol, "outputsize": output_size,
                   "datatype": datatype, "apikey": key}
@@ -103,7 +105,7 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
             params = {"function": function, "from_currency": from_crrn, "to_currency": to_crrn, "apikey": key}
         else:
             # Retrieval of historical rates
-            function = get_alpha_vantage_function(category)
+            function = get_api_function(category)
             params = {"function": function, "from_symbol": from_crrn, "to_symbol": to_crrn,
                       "outputsize": output_size, "datatype": datatype, "apikey": key}
 
@@ -135,11 +137,11 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
             params = {"function": function, "symbol": symbol, "market": market, "apikey": key}
         else:
             # Retrieval of historical rates
-            function = get_alpha_vantage_function(category)
+            function = get_api_function(category)
             params = {"function": function, "symbol": symbol, "market": market,
                       "outputsize": output_size, "datatype": datatype, "apikey": key}
     elif category == "sector":
-        function = get_alpha_vantage_function(category)
+        function = get_api_function(category)
         params = {"function": function, "apikey": key}
 
     else:

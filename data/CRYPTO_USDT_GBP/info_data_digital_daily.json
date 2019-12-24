@@ -4,6 +4,7 @@
   "Digital Currency Name": "Tether",
   "Market Code": "GBP",
   "Market Name": "British Pound Sterling",
-  "Last Refreshed": "2019-12-17 00:00:00",
-  "Time Zone": "UTC"
+  "Last Refreshed": "2019-12-23 00:00:00",
+  "Time Zone": "UTC",
+  "FirstTimeStamp": "2018-11-30T00:00:00"
 }

@@ -1,7 +1,7 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "ASML.AMS",
-  "Last Refreshed": "2019-12-18",
+  "Last Refreshed": "2019-12-24",
   "Output Size": "Compact",
   "Time Zone": "US/Eastern",
   "symbol": "ASML.AMS",
@@ -11,5 +11,6 @@
   "marketOpen": "09:00",
   "marketClose": "17:40",
   "timezone": "UTC+01",
-  "currency": "EUR"
+  "currency": "EUR",
+  "FirstTimeStamp": "2000-01-03T00:00:00"
 }
