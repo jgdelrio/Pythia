@@ -225,11 +225,26 @@ def load_shares_data(symbols, period="daily"):
         symbols = [symbols]
 
     folders, files = zip(*[build_path_and_file(symbol, period) for symbol in symbols])
-    data = [read_pandas_data(file_name) for file_name in files]
+    data_group = []
+    for file_name in files:
+        # Read and transform data types
+        data = read_pandas_data(file_name)
+        if "open" in data.columns:
+            data.open = data.open.astype(float)
+        if "close" in data.columns:
+            data.close = data.close.astype(float)
+        if "high" in data.columns:
+            data.high = data.high.astype(float)
+        if "low" in data.columns:
+            data.low = data.low.astype(float)
+        if "volume" in data.columns:
+            data.volume = data.volume.astype(int)
+        data_group.append(data)
+
     if unique_value:
-        return data[0]
+        return data_group[0]
     else:
-        return data
+        return data_group
 
 
 async def update_stock(symbol, category="daily", max_gap=0, api="vantage", verbose=VERBOSE):
@@ -282,8 +297,7 @@ async def update_stock(symbol, category="daily", max_gap=0, api="vantage", verbo
         LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}ERROR: {err.__repr__()} {traceback.print_tb(err.__traceback__)}")
 
 
-def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage",
-                        limit=MAX_CONNECTIONS, verbose=VERBOSE):
+def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage", verbose=VERBOSE):
     """
     Provided a list of symbols, update the info of the stocks for any stock where there is
     no information in the last (gap) days.
@@ -306,7 +320,7 @@ def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage",
     loop.run_until_complete(asyncio.gather(*tasks))
 
 
-def search_symbol(symbols=None, api="vantage", limit=MAX_CONNECTIONS, verbose=VERBOSE):
+def search_symbol(symbols=None, api="vantage", verbose=VERBOSE):
     if symbols == None:
         print('Function Help:\n' \
               '\tProvide a list of symbols, references, possible names, ISIN ref, SEDOL ref...\n' \
@@ -316,13 +330,11 @@ def search_symbol(symbols=None, api="vantage", limit=MAX_CONNECTIONS, verbose=VE
     if isinstance(symbols, str):
         symbols = [symbols]
 
-    sem = asyncio.Semaphore(value=limit)
-
     if isinstance(api, list):
-        tasks = (query_data(nsymbol, sem, category="search", api=napi, verbose=verbose)
+        tasks = (query_data(nsymbol, category="search", api=napi, verbose=verbose)
                  for nsymbol, napi in zip(symbols, api))
     else:
-        tasks = (query_data(symbol, sem, category="search", api=api, verbose=verbose) for symbol in symbols)
+        tasks = (query_data(symbol, category="search", api=api, verbose=verbose) for symbol in symbols)
 
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(asyncio.gather(*tasks))
