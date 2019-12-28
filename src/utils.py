@@ -1,12 +1,19 @@
 import os
 import sys
+import re
 import inspect
 import logging
 import pathlib
+import traceback
+import pandas as pd
 from datetime import datetime, timedelta
 from traitlets.config.loader import LazyConfigValue
 
 from src.config import DFT_UTC_TS, LOG_LEVEL, LOG_FOLDER, VERBOSE
+
+
+dateparse = lambda dates: pd.datetime.strptime(dates, '%Y-%m-%d')
+capture_enum_regex = re.compile("^[\w]*\.\s*")
 
 
 def get_logger(name="Pythia", to_stdout=False, level=LOG_LEVEL):
@@ -44,6 +51,61 @@ def in_ipynb(verbose=VERBOSE):
             return False
     except NameError:
         return False
+
+
+def clean_enumeration(data):
+    if isinstance(data, dict):
+        return {key.replace(get_index(capture_enum_regex.findall(key), 0, ""), ""): val for key, val in data.items()}
+    elif isinstance(data, list):
+        return [c.replace(get_index(capture_enum_regex.findall(c), 0, ""), "") for c in data]
+    else:
+        raise Exception(f"Type of data not supported {type(data)}")
+
+
+def clean_pandas_data(dat):
+    """Receives a dictionary of data, transform the dict into a pandas DataFrame and clean the column names"""
+    try:
+        data = pd.DataFrame.from_dict(dat, orient="index")
+        # Apply clean names to columns and index
+        column_names = clean_enumeration(data.columns.tolist())
+        data.columns = column_names
+        data.index.name = 'date'
+        data.sort_index(axis=0, inplace=True, ascending=True)  # Sort by date
+    except Exception as err:
+        LOG.error(f"Error cleaning dataset: {err}")
+        data = None
+    return data
+
+
+def read_pandas_data(file_name):
+    if not file_name.exists():
+        LOG.error(f"ERROR: data not found for {file_name}")
+        return None
+    return pd.read_csv(file_name, parse_dates=['date'], index_col='date', date_parser=dateparse)
+
+
+def save_pandas_data(file_name, dat, old_data=None, verbose=VERBOSE):
+    try:
+        data = clean_pandas_data(dat)
+
+        if old_data is not None:
+            try:
+                # Avoid the last index as it may contain an incomplete week or month
+                last_dt = old_data.index[-2]
+                idx = data.index.get_loc(last_dt.strftime("%Y-%m-%d"))
+                updated_data = pd.concat((old_data.iloc[:-2, :], data.iloc[idx:, :]), axis=0)
+                updated_data.reset_index().to_csv(file_name, index=False, compression="infer")  # Update
+            except KeyError as err:
+                LOG.error(f"Error updating the data: {err}")
+        else:
+            data.reset_index().to_csv(file_name, index=False, compression="infer")          # Save
+
+        if verbose > 1:
+            symbol = file_name.parent.name
+            LOG.info(f"Saved {symbol} data:{get_tabs(symbol, prev=12)}[{file_name.stem}] OK")
+    except Exception as err:
+        LOG.error(f"ERROR saving data:\t\t{file_name.parent.name + file_name.stem} "
+                  f"{err.__repr__()} {traceback.print_tb(err.__traceback__)}")
 
 
 class DelayedAssert:
@@ -187,6 +249,18 @@ def add_first_ts(info, first_date):
 
     info["FirstTimeStamp"] = ts2datetime(first_date)
     return info
+
+
+def cycle(array):
+    """Cycle throughout the array indefinitely"""
+    idx, n = 0, len(array)
+    while True:
+        if idx < n:
+            yield array[idx]
+            idx += 1
+        else:
+            yield array[0]
+            idx = 1
 
 
 LOG = get_logger(name="Pythia", to_stdout=True, level=LOG_LEVEL)

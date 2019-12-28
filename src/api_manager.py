@@ -9,21 +9,18 @@ import aiohttp
 import asyncio
 import aiofiles
 import nest_asyncio
-import pandas as pd
 import traceback
-from datetime import datetime
+
 from src.config import *
 from src.crawler_semaphore import SemaphoreController
 from src.alpha_vantage_api import alpha_vantage_query, manage_vantage_errors
-from src.utils import LOG, get_tabs, get_index, add_first_ts
+from src.utils import LOG, get_tabs, get_index, add_first_ts, read_pandas_data, save_pandas_data, clean_enumeration
 
 
 nest_asyncio.apply()
 # RegExp
 clean_names_regex = re.compile("[\w]*$")
-capture_enum_regex = re.compile("^[\w]*\.\s*")
 # Functions & Filtering
-dateparse = lambda dates: pd.datetime.strptime(dates, '%Y-%m-%d')
 semaphore_controller = SemaphoreController()
 
 
@@ -31,14 +28,14 @@ def build_path_and_file(symbol, category):
     if isinstance(symbol, (list, tuple)):
         # FX currencies (from, to) and digital currencies:
         if "digital_" in category:
-            subfolder = "CRYPTO_" + symbol[0] + "_" + symbol[1]
+            subfolder = "CRYPTO_" + symbol[0].upper() + "_" + symbol[1].upper()
         else:
-            subfolder = symbol[0] + "_" + symbol[1]
+            subfolder = symbol[0].upper() + "_" + symbol[1].upper()
         folder_name = DATA_FOLDER.joinpath(subfolder)
         file_name = folder_name.joinpath(DFT_FX_FILE + "_" + category + DFT_FX_EXT)
     else:
         # Shares & stocks
-        folder_name = DATA_FOLDER.joinpath(symbol)
+        folder_name = DATA_FOLDER.joinpath(symbol.upper())
         file_name = folder_name.joinpath(DFT_STOCK_FILE + "_" + category + DFT_STOCK_EXT)
 
     folder_name.mkdir(parents=True, exist_ok=True)      # Create if doesn't exist
@@ -67,7 +64,7 @@ async def query_data(symbol, category=None, api="vantage", verbose=VERBOSE, **kw
     if category is None:
         raise ValueError("Please provide a valid category in the parameters")
     # Get semaphore
-    semaphore_controller.get_semaphore(api)
+    await semaphore_controller.get_semaphore(api)
 
     if verbose > 2:
         LOG.info("Successfully acquired the semaphore")
@@ -85,9 +82,12 @@ async def query_data(symbol, category=None, api="vantage", verbose=VERBOSE, **kw
                 data = await resp.json()
 
         if api == "vantage":
-            if manage_vantage_errors(data, symbol) == "longWait":
+            checked_response = manage_vantage_errors(data, symbol)
+            if checked_response == "longWait":
                 counter += 1
-                await asyncio.sleep(VANTAGE_WAIT)
+                await asyncio.sleep(VANTAGE_COOLDOWN)
+            elif checked_response == "api_error":
+                data = None
             else:
                 break
 
@@ -97,15 +97,6 @@ async def query_data(symbol, category=None, api="vantage", verbose=VERBOSE, **kw
     # Release semaphore
     semaphore_controller.release_semaphore(api)
     return data
-
-
-def clean_enumeration(data):
-    if isinstance(data, dict):
-        return {key.replace(get_index(capture_enum_regex.findall(key), 0, ""), ""): val for key, val in data.items()}
-    elif isinstance(data, list):
-        return [c.replace(get_index(capture_enum_regex.findall(c), 0, ""), "") for c in data]
-    else:
-        raise Exception(f"Type of data not supported {type(data)}")
 
 
 def process_vantage_data(data):
@@ -170,56 +161,10 @@ async def update_stock_info(info_file, info, create=True, verbose=VERBOSE):
         LOG.error(f"ERROR updating info: {info_file}. Msg: {err.__repr__()} {traceback.print_tb(err.__traceback__)}")
 
 
-def clean_pandas_data(dat):
-    """Receives a dictionary of data, transform the dict into a pandas DataFrame and clean the column names"""
-    try:
-        data = pd.DataFrame.from_dict(dat, orient="index")
-        # Apply clean names to columns and index
-        column_names = clean_enumeration(data.columns.tolist())
-        data.columns = column_names
-        data.index.name = 'date'
-        data.sort_index(axis=0, inplace=True, ascending=True)  # Sort by date
-    except Exception as err:
-        LOG.error(f"Error cleaning dataset: {err}")
-        data = None
-    return data
-
-
-def save_pandas_data(file_name, dat, old_data=None, verbose=VERBOSE):
-    try:
-        data = clean_pandas_data(dat)
-
-        if old_data is not None:
-            try:
-                # Avoid the last index as it may contain an incomplete week or month
-                last_dt = old_data.index[-2]
-                idx = data.index.get_loc(last_dt.strftime("%Y-%m-%d"))
-                updated_data = pd.concat((old_data.iloc[:-2, :], data.iloc[idx:, :]), axis=0)
-                updated_data.reset_index().to_csv(file_name, index=False, compression="infer")  # Update
-            except KeyError as err:
-                LOG.error(f"Error updating the data: {err}")
-        else:
-            data.reset_index().to_csv(file_name, index=False, compression="infer")          # Save
-
-        if verbose > 1:
-            symbol = file_name.parent.name
-            LOG.info(f"Saved {symbol} data:{get_tabs(symbol, prev=12)}[{file_name.stem}] OK")
-    except Exception as err:
-        LOG.error(f"ERROR saving data:\t\t{file_name.parent.name + file_name.stem} "
-                  f"{err.__repr__()} {traceback.print_tb(err.__traceback__)}")
-
-
-def read_pandas_data(file_name):
-    if not file_name.exists():
-        LOG.error(f"ERROR: data not found for {file_name}")
-        return None
-    return pd.read_csv(file_name, parse_dates=['date'], index_col='date', date_parser=dateparse)
-
-
-def load_shares_data(symbols, period="daily"):
+def load_stock_data(symbols, period="daily", date_ini=None, date_end=None):
     unique_value = False
-    if period not in INFO_VATIATIONS:
-        raise ValueError(f"The period {period} is not supported. Please select one among {INFO_VATIATIONS}")
+    if period not in INFO_VARIATIONS:
+        raise ValueError(f"The period {period} is not supported. Please select one among {INFO_VARIATIONS}")
     if isinstance(symbols, str):
         unique_value = True
         symbols = [symbols]
@@ -239,6 +184,11 @@ def load_shares_data(symbols, period="daily"):
             data.low = data.low.astype(float)
         if "volume" in data.columns:
             data.volume = data.volume.astype(int)
+
+        if date_ini:
+            data = data[data.index >= date_ini]
+        if date_end:
+            data = data[data.index <= date_end]
         data_group.append(data)
 
     if unique_value:
@@ -279,7 +229,7 @@ async def update_stock(symbol, category="daily", max_gap=0, api="vantage", verbo
             # Download and save new data
             if verbose > 1:
                 LOG.info(f"Updating {symbol} ...")
-            data = await query_data(symbol, semaphore, category=category, api=api)
+            data = await query_data(symbol, category=category, api=api)
             if data in [None, {}]:
                 LOG.WARNING(f"No data received for {symbol}")
                 return
@@ -364,7 +314,7 @@ def update_info_with_search(symbols=None, api="vantage", verbose=VERBOSE):
     # Build folders list (and create if they don't exist) and file list
     if "stock_folders" not in locals():
         stock_folders, _ = list(zip(*[build_path_and_file(symbol, "any") for symbol in symbols]))
-    info_files = [build_info_file(folder, variation) for folder in stock_folders for variation in INFO_VATIATIONS]
+    info_files = [build_info_file(folder, variation) for folder in stock_folders for variation in INFO_VARIATIONS]
 
     info_groups = [(info_f, find_data(info_f, info_from_symbols)) for info_f in info_files]
     # Clean empty groups
@@ -404,4 +354,4 @@ def test_retrieve_stocks():
 
 if __name__ == "__main__":
     # update_info_with_search()
-    load_shares_data("AMZN")
+    load_stock_data("AMZN")

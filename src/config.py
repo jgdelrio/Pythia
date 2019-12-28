@@ -13,7 +13,8 @@ DFT_STOCK_EXT = ".zip"
 DFT_FX_FILE = "data"
 DFT_FX_EXT = ".zip"
 DFT_CRIPTO_PREFIX = "CRYPTO_"
-INFO_VATIATIONS = ["daily", "daily-adjusted", "weekly", "weekly-adjusted", "monthly", "monthly-adjusted"]
+INFO_VARIATIONS = ["daily", "daily-adjusted", "weekly", "weekly-adjusted", "monthly", "monthly-adjusted"]
+FX_VARIATIONS = ["daily", "weekly", "monthly"]
 DFT_HEADER = ("Content-type", 'text/plain; charset=utf-8')
 DFT_UTC_TS = datetime.utcfromtimestamp(datetime.min.toordinal())
 
@@ -24,9 +25,9 @@ LOG_FOLDER = ROOT.joinpath("logs")
 ENV = getenv("ENV", "local")
 MAX_CONNECTIONS = int(getenv("MAX_CONNECTIONS", "5"))
 QUERY_RETRY_LIMIT = int(getenv("QUERY_RETRY_LIMIT", 3))
-MIN_SEM_WAIT = int(getenv("MIN_WAIT", "10"))
+MIN_SEM_WAIT = int(getenv("MIN_WAIT", "1"))
 
-VANTAGE_WAIT = int(getenv("VANTAGE_WAIT", "60"))
+VANTAGE_COOLDOWN = int(getenv("VANTAGE_COOLDOWN", "60"))
 VANTAGE_SEMAPHORE_LIMIT = int(getenv("VANTAGE_SEMAPHORE_LIMIT", "5"))
 VERBOSE = int(getenv("VERBOSE", "2"))
 
@@ -41,7 +42,7 @@ HEADERS = {
                    'Chrome/45.0.2454.101 Safari/537.36'),
 }
 
-share_parameters = {
+stock_parameters = {
     "currency": "Currency",
     "name": "Name",
     "type": "Type",

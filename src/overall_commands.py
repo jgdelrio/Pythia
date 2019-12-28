@@ -1,19 +1,14 @@
 import re
 import pandas as pd
-from src.config import DATA_FOLDER, DFT_CRIPTO_PREFIX, DFT_INFO_FILE, DFT_INFO_EXT, VERBOSE, share_parameters, fx_parameters, crypto_parameters
-from src.api_manager import gather_info, retrieve_stock_list
+
 from src.utils import LOG
+from src.api_manager import gather_info, retrieve_stock_list
+from src.config import DATA_FOLDER, DFT_CRIPTO_PREFIX, DFT_INFO_FILE, DFT_INFO_EXT, VERBOSE, stock_parameters, fx_parameters, crypto_parameters
 
 
 currency_regex = re.compile(r"\A[A-Z]{3}_[A-Z]{3}")
 crypto_regex = re.compile(r"\A" + DFT_CRIPTO_PREFIX + r"[A-Z]{3,4}_[A-Z]{3}")
 info_data_pattern = DFT_INFO_FILE + r"*" + DFT_INFO_EXT
-FX_UPDATES = (
-    ["GBP", "EUR"],
-    ["GBP", "USD"],
-    ["GBP", "CNY"],
-    ["GBP", "INR"],
-)
 
 
 def validate_list(sym):
@@ -28,7 +23,7 @@ def get_stock_folders():
     return stock_folders
 
 
-def get_share_references():
+def get_stocks_references():
     """Return list of existing stocks"""
     stock_folders = get_stock_folders()
     stock_names = [x.name for x in stock_folders]
@@ -71,7 +66,7 @@ def get_crypto_references():
 def update_all_stock_data(stocks=None, gap=7, verbose=VERBOSE):
     """Get all existing stocks and update their info"""
     if stocks is None:
-        stocks, _ = get_share_references()
+        stocks, _ = get_stocks_references()
     validate_list(stocks)
 
     retrieve_stock_list(stocks, category="daily", gap=gap, verbose=verbose)
@@ -165,28 +160,28 @@ def __create_table(refs, variant="fx", verbose=VERBOSE):
     return table
 
 
-def get_shares_table(verbose=0, v=None):
+def get_stocks_table(verbose=0, v=None):
     """
     Generates a table with existing symbols, classification, country, currency, folder...
     :return: table
     """
     verbose = verbose if v is None else v
     rows = []
-    for share, id_folder in zip(*get_share_references()):
+    for share, id_folder in zip(*get_stocks_references()):
         info_files = list(id_folder.glob(info_data_pattern))
 
         if info_files:
             for info_ref in info_files:
                 rows.append((share, info_ref))
         else:
-            rows.append((share, None))
+            pass        # No info files detected
 
     # Read info from files
     info = gather_info(map(lambda x: x[1], rows), verbose=verbose)
     table_dict = {
         "Symbol": list(map(lambda x: x[0], rows)),
         "Period": list(map(lambda x: x[1].stem.split("_")[-1], rows)),
-        **{val: map_field(info, key) for key, val in share_parameters.items()}}
+        **{val: map_field(info, key) for key, val in stock_parameters.items()}}
 
     table = pd.DataFrame(table_dict)
     return table
@@ -196,7 +191,7 @@ if __name__ == "__main__":
     # stocks = ['BAS.DEX']
     # retrieve_stock_list(stocks)
 
-    # print(get_shares_table(verbose=3))
+    # print(get_stocks_table(verbose=3))
     # print(get_fx_table(mode="fx", verbose=3))
     # print(get_fx_table(mode="crypto", verbose=3))
 

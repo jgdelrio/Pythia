@@ -155,6 +155,7 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
 def manage_vantage_errors(response, symbol):
     if "Error Message" in response.keys():
         LOG.error(f"ERROR: Not possible to retrieve {symbol}. Msg: {response['Error Message']}")
+        return "api_error"
     elif "Note" in response.keys():
         if response["Note"][:111] == 'Thank you for using Alpha Vantage! Our standard API call frequency ' \
                                      'is 5 calls per minute and 500 calls per day.':
