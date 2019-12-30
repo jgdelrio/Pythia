@@ -1,7 +1,8 @@
 import pandas as pd
+from datetime import datetime, timedelta
 
 from src.overall_commands import *
-from src.utils import read_pandas_data
+from src.utils import read_pandas_data, transform_column_types
 from src.config import FX_VARIATIONS, DFT_FX_FILE, DFT_FX_EXT
 
 fx_types = ["fx", "digital"]
@@ -20,15 +21,7 @@ def load_fx_data(fx_folder, category="fx", period="daily"):
     if data is None:
         raise ValueError(f"It was not possible to load the data from {file_ref}")
 
-    if "open" in data.columns:
-        data.open = data.open.astype(float)
-    if "close" in data.columns:
-        data.close = data.close.astype(float)
-    if "high" in data.columns:
-        data.high = data.high.astype(float)
-    if "low" in data.columns:
-        data.low = data.low.astype(float)
-    return data
+    return transform_column_types(data)
 
 
 class FxManager:
@@ -42,9 +35,9 @@ class FxManager:
     def __init__(self):
         self.fx_data = {}
         self.crypto_data = {}
-        self.load_fx_data()
+        self.load_all_fx_data()
 
-    def load_fx_data(self):
+    def load_all_fx_data(self):
         """
         Load all Fx and Digital data into memory for later calls
         """
@@ -109,6 +102,10 @@ class FxManager:
         if date_end:
             data = data[data.index <= date_end]
         return data
+
+    def query_latest(self, fxfrom, fxto):
+        data = self.query(fxfrom, fxto, date_ini=(datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d"))
+        return data.iloc[-1, :]
 
 
 if __name__ == "__main__":

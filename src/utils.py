@@ -263,4 +263,18 @@ def cycle(array):
             idx = 1
 
 
+def transform_column_types(data):
+    if "open" in data.columns:
+        data.open = data.open.astype(float)
+    if "close" in data.columns:
+        data.close = data.close.astype(float)
+    if "high" in data.columns:
+        data.high = data.high.astype(float)
+    if "low" in data.columns:
+        data.low = data.low.astype(float)
+    if "volume" in data.columns:
+        data.volume = data.volume.astype(int)
+    return data
+
+
 LOG = get_logger(name="Pythia", to_stdout=True, level=LOG_LEVEL)

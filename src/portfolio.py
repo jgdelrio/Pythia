@@ -8,6 +8,8 @@ import pandas as pd
 
 from src.config import *
 from src.utils import LOG
+from src.fx_tools import FxManager
+from src.api_manager import search_latest_stock_data
 
 
 __PORTFOLIO_PROPERTIES = ["Symbol", "Quantity", "Price", "Currency", "Market", "Date", "Fees",
@@ -23,6 +25,7 @@ class PortfolioManager:
         self._performance = None
         self.verbose = verbose
         self.load_existing_portfolios()
+        self.fx_manager = FxManager()
 
     def empty_order(self):
         return {prop: None for prop in PORTFOLIO_PROPERTIES}
@@ -129,6 +132,20 @@ class PortfolioManager:
         cost_grp, currencies = zip(*[(order["10.TotalCost"], order["08.SettledCurrency"]) for order in self.portfolios[portfolio]])
         return sum(cost_grp)
 
+    def get_value_now(self, order):
+        qty = order["02.Quantity"]
+        val = search_latest_stock_data(order["01.Symbol"])["close"]
+        fx_exchange = self.fx_manager.query_latest(order["04.Currency"], order["08.SettledCurrency"])
+
+        stock_now = {
+            "02.Quantity": qty,
+            "03.Price": val,
+            "06.Date": datetime.now().strftime("%Y-%m-%d"),
+            "09.FxExchange": fx_exchange,
+            "10.TotalCost": qty * val * fx_exchange
+        }
+        return stock_now
+
     @staticmethod
     def report_from_order(entry_order, exit_order):
         symbol = entry_order["01.Symbol"]
@@ -148,6 +165,8 @@ class PortfolioManager:
         return {
             "Symbol": symbol,
             "AbsGain": abs_gain,
+            "BookCost": entry_order["10.TotalCost"],
+            "Period": days_diff,
             "PctAbsGain": perc_abs_gain,
             "YearlyPctGain": perc_yearly_gain,
             "AbsMarketGain": market_gain,
@@ -155,13 +174,12 @@ class PortfolioManager:
             "YearlyPctMarketGain": perc_yearly_market_gain
         }
 
-
     def portfolio_report(self, portfolio, group=None):
         if portfolio not in self.portfolios.keys():
             raise ValueError(f"Portfolio {portfolio} not found. It is not possible to build report")
 
-        report_acc = []
-        report_closed_orders = []
+        report_accum = []
+        report_closed = []
         orders = pd.DataFrame.from_dict(self.portfolios['portfolio_JDR'])
         orders_grp = orders.groupby(["11.Group", "01.Symbol", "05.Market"], axis=0, as_index=True)["06.Date"].count()
         for grp in orders_grp.index:
@@ -179,7 +197,7 @@ class PortfolioManager:
                             diff = sale_qty + qty
                             if diff <= 0:
                                 # Close order and report its performance
-                                report_closed_orders.append(self.report_from_order(orders_selection.iloc[ind, :], row))
+                                report_closed.append(self.report_from_order(orders_selection.iloc[ind, :], row))
                                 orders_selection["02.Quantity"][ind] = 0
                                 if diff == 0:
                                     break
@@ -188,13 +206,19 @@ class PortfolioManager:
                             else:
                                 # Adjust qty
                                 orders_selection["02.Quantity"][ind] = diff
-            # All possible sales have been considered. Now evaluate gain vs now
+            # All possible sales have been considered. Now evaluate possible gains until now
             for index, row in orders_selection.iterrows():
                 sale_qty = row["02.Quantity"]
+                if sale_qty > 0:
+                    value_now = get_value_now(row)
+
+                    self.report_from_order(row, value_now)
 
 
-        report = None
 
+        report = {
+            "accum": report_accum,
+            "closed": report_closed }
 
         if portfolio in self.reports.keys():
             self.reports[portfolio].append(report)

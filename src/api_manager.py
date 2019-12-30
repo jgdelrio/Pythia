@@ -10,11 +10,12 @@ import asyncio
 import aiofiles
 import nest_asyncio
 import traceback
+from datetime import datetime, timedelta
 
 from src.config import *
 from src.crawler_semaphore import SemaphoreController
 from src.alpha_vantage_api import alpha_vantage_query, manage_vantage_errors
-from src.utils import LOG, get_tabs, get_index, add_first_ts, read_pandas_data, save_pandas_data, clean_enumeration
+from src.utils import LOG, get_tabs, get_index, add_first_ts, read_pandas_data, save_pandas_data, clean_enumeration, transform_column_types
 
 
 nest_asyncio.apply()
@@ -173,17 +174,7 @@ def load_stock_data(symbols, period="daily", date_ini=None, date_end=None):
     data_group = []
     for file_name in files:
         # Read and transform data types
-        data = read_pandas_data(file_name)
-        if "open" in data.columns:
-            data.open = data.open.astype(float)
-        if "close" in data.columns:
-            data.close = data.close.astype(float)
-        if "high" in data.columns:
-            data.high = data.high.astype(float)
-        if "low" in data.columns:
-            data.low = data.low.astype(float)
-        if "volume" in data.columns:
-            data.volume = data.volume.astype(int)
+        data = transform_column_types(read_pandas_data(file_name))
 
         if date_ini:
             data = data[data.index >= date_ini]
@@ -195,6 +186,11 @@ def load_stock_data(symbols, period="daily", date_ini=None, date_end=None):
         return data_group[0]
     else:
         return data_group
+
+
+def search_latest_stock_data(symbol):
+    data = load_stock_data(symbol, date_ini=(datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d"))
+    return data.iloc[-1, :]
 
 
 async def update_stock(symbol, category="daily", max_gap=0, api="vantage", verbose=VERBOSE):
