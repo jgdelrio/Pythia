@@ -1,0 +1,28 @@
+- Symbol: ATVI
+  ISIN: US00507V1098
+  Name: Activision Blizzard Inc.
+  Quantity: 10
+  Price: 41.72
+  Factor: 1
+  Currency: USD
+  Market: USA
+  Date: '2019-12-22'
+  Fees: 9
+  SettledCurrency: GBP
+  FxExchange: 1.31
+  TotalCost: 327.473282442748092
+  Group: MYPROVIDER
+- Symbol: DIS
+  ISIN: US2546871060
+  Name: The Walt Disney Company
+  Quantity: 8
+  Price: 110.4
+  Factor: 1
+  Currency: USD
+  Market: USA
+  Date: '2020-01-01'
+  Fees: 8
+  SettledCurrency: GBP
+  FxExchange: 1.56
+  TotalCost: 554.285
+  Group: MYOTHERPROVIDER
