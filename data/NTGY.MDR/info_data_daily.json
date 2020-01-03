@@ -1,16 +1,15 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "NTGY.MDR",
-  "Last Refreshed": "2019-12-27",
+  "LastUpdate": "2020-01-02",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern",
-  "symbol": "NTGY.MDR",
-  "name": "Naturgy Energy Group, S.A.",
-  "type": "Equity",
-  "region": "Madrid",
+  "TimeZone": "US/Eastern",
+  "Name": "Naturgy Energy Group, S.A.",
+  "Type": "Equity",
+  "Region": "Madrid",
   "marketOpen": "09:00",
   "marketClose": "17:30",
   "timezone": "UTC+01",
-  "currency": "EUR",
+  "Currency": "EUR",
   "FirstTimeStamp": "2018-07-16T00:00:00"
 }

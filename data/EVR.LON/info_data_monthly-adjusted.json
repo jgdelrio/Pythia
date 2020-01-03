@@ -1,7 +1,14 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "EVR.LON",
-  "Last Refreshed": "2019-12-27",
-  "Time Zone": "US/Eastern",
-  "FirstTimeStamp": "2011-12-30T00:00:00"
+  "LastUpdate": "2019-12-27",
+  "TimeZone": "US/Eastern",
+  "FirstTimeStamp": "2011-12-30T00:00:00",
+  "Name": "EVRAZ plc",
+  "Type": "Equity",
+  "Region": "United Kingdom",
+  "marketOpen": "08:00",
+  "marketClose": "16:30",
+  "timezone": "UTC+00",
+  "Currency": "GBP"
 }

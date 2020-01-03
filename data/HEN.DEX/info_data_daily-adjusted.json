@@ -1,0 +1,15 @@
+{
+  "Information": "Daily Time Series with Splits and Dividend Events",
+  "Symbol": "HEN.DEX",
+  "LastUpdate": "2020-01-02",
+  "Output Size": "Compact",
+  "TimeZone": "US/Eastern",
+  "Name": "Henkel AG & Co. KGaA",
+  "Type": "Equity",
+  "Region": "XETRA",
+  "marketOpen": "08:00",
+  "marketClose": "20:00",
+  "timezone": "UTC+01",
+  "Currency": "EUR",
+  "FirstTimeStamp": "2000-01-03T00:00:00"
+}

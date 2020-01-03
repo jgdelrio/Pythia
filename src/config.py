@@ -15,12 +15,17 @@ DFT_FX_EXT = ".zip"
 DFT_CRIPTO_PREFIX = "CRYPTO_"
 INFO_VARIATIONS = ["daily", "daily-adjusted", "weekly", "weekly-adjusted", "monthly", "monthly-adjusted"]
 FX_VARIATIONS = ["daily", "weekly", "monthly"]
+FX_FEE = 0.012
 DFT_HEADER = ("Content-type", 'text/plain; charset=utf-8')
 DFT_UTC_TS = datetime.utcfromtimestamp(datetime.min.toordinal())
 
 ROOT = pathlib.Path(__file__).parents[1]
 DATA_FOLDER = ROOT.joinpath("data")
 LOG_FOLDER = ROOT.joinpath("logs")
+PORTFOLIOS_FOLDER = ROOT.joinpath("portfolios")
+REPORTS_FOLDER = ROOT.joinpath("reports")
+ISIN_DB = "DB_ISIN.csv"
+MISSING_DB = "DB_missing.csv"
 
 ENV = getenv("ENV", "local")
 MAX_CONNECTIONS = int(getenv("MAX_CONNECTIONS", "5"))
@@ -30,6 +35,9 @@ MIN_SEM_WAIT = int(getenv("MIN_WAIT", "1"))
 VANTAGE_COOLDOWN = int(getenv("VANTAGE_COOLDOWN", "60"))
 VANTAGE_SEMAPHORE_LIMIT = int(getenv("VANTAGE_SEMAPHORE_LIMIT", "5"))
 VERBOSE = int(getenv("VERBOSE", "2"))
+
+# Discontinued symbols (ignored during data retrieval)
+SYMBOLS_TO_IGNORE = ["ABE.MDR"]
 
 if ENV == "local":
     LOG_LEVEL = logging.DEBUG
@@ -42,14 +50,16 @@ HEADERS = {
                    'Chrome/45.0.2454.101 Safari/537.36'),
 }
 
+
 stock_parameters = {
+    "symbol": "Symbol",
     "currency": "Currency",
     "name": "Name",
-    "type": "Type",
-    "region": "Region",
     "FirstTimeStamp": "FirstTimeStamp",
     "Last Refreshed": "LastUpdate",
-    "timezone": "TimeZone",
+    "type": "Type",
+    "region": "Region",
+    "Time Zone": "TimeZone",
     }
 
 fx_parameters = {

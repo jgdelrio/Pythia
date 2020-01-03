@@ -1,0 +1,15 @@
+{
+  "Information": "Daily Time Series with Splits and Dividend Events",
+  "Symbol": "ELE.MDR",
+  "LastUpdate": "2020-01-02",
+  "Output Size": "Compact",
+  "TimeZone": "US/Eastern",
+  "Name": "Endesa, S.A.",
+  "Type": "Equity",
+  "Region": "Madrid",
+  "marketOpen": "09:00",
+  "marketClose": "17:30",
+  "timezone": "UTC+01",
+  "Currency": "EUR",
+  "FirstTimeStamp": "2000-01-03T00:00:00"
+}

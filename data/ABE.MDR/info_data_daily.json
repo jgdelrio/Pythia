@@ -1,0 +1,16 @@
+{
+  "Symbol": "ABE.MDR",
+  "Name": "ABERTIS Infraestructuras",
+  "Type": "Equity",
+  "Region": "Madrid",
+  "marketOpen": "09:00",
+  "marketClose": "17:30",
+  "timezone": "UTC+01",
+  "currency": "EUR",
+  "matchScore": "1.0000",
+  "Information": "Daily Prices (open, high, low, close) and Volumes",
+  "LastUpdated": "2018-07-27",
+  "Output Size": "Compact",
+  "TimeZone": "EU",
+  "FirstTimeStamp": "1987-05-18T00:00:00"
+}

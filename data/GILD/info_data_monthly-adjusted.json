@@ -1,15 +1,14 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "GILD",
-  "Last Refreshed": "2019-12-27 10:57:52",
-  "Time Zone": "US/Eastern",
-  "symbol": "GILD",
-  "name": "Gilead Sciences Inc.",
-  "type": "Equity",
-  "region": "United States",
+  "LastUpdate": "2019-12-27 10:57:52",
+  "TimeZone": "US/Eastern",
+  "Name": "Gilead Sciences Inc.",
+  "Type": "Equity",
+  "Region": "United States",
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "currency": "USD",
+  "Currency": "USD",
   "FirstTimeStamp": "2000-01-31T00:00:00"
 }

@@ -1,0 +1,13 @@
+{
+  "Information": "Monthly Adjusted Prices and Volumes",
+  "Symbol": "DSY.PAR",
+  "LastUpdate": "2019-12-31",
+  "TimeZone": "US/Eastern",
+  "Name": "Dassault Systemes SE",
+  "Type": "Equity",
+  "Region": "Paris",
+  "marketOpen": "09:00",
+  "marketClose": "17:30",
+  "timezone": "UTC+01",
+  "Currency": "EUR"
+}

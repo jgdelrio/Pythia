@@ -1,0 +1,13 @@
+{
+  "Information": "Monthly Adjusted Prices and Volumes",
+  "Symbol": "BT-A.LON",
+  "Name": "BT Group plc",
+  "LastUpdate": "2019-12-31",
+  "TimeZone": "US/Eastern",
+  "Type": "Equity",
+  "Region": "United Kingdom",
+  "marketOpen": "08:00",
+  "marketClose": "16:30",
+  "timezone": "UTC+00",
+  "Currency": "GBP"
+}

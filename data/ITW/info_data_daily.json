@@ -1,0 +1,14 @@
+{
+  "Information": "Daily Prices (open, high, low, close) and Volumes",
+  "Symbol": "ITW",
+  "LastUpdate": "2020-01-02",
+  "Output Size": "Full size",
+  "TimeZone": "US/Eastern",
+  "Name": "Illinois Tool Works Inc.",
+  "Type": "Equity",
+  "Region": "United States",
+  "marketOpen": "09:30",
+  "marketClose": "16:00",
+  "timezone": "UTC-05",
+  "Currency": "USD"
+}

@@ -1,15 +1,14 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "RIO",
-  "Last Refreshed": "2019-12-27 11:00:38",
-  "Time Zone": "US/Eastern",
-  "symbol": "RIO",
-  "name": "Rio Tinto Group",
-  "type": "Equity",
-  "region": "United States",
+  "LastUpdate": "2019-12-27 11:00:38",
+  "TimeZone": "US/Eastern",
+  "Name": "Rio Tinto Group",
+  "Type": "Equity",
+  "Region": "United States",
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "currency": "USD",
+  "Currency": "USD",
   "FirstTimeStamp": "2000-01-31T00:00:00"
 }

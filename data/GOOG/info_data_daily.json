@@ -1,16 +1,15 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "GOOG",
-  "Last Refreshed": "2019-12-27 10:40:23",
+  "LastUpdate": "2020-01-02",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern",
-  "symbol": "GOOG",
-  "name": "Alphabet Inc.",
-  "type": "Equity",
-  "region": "United States",
+  "TimeZone": "US/Eastern",
+  "Name": "Alphabet Inc.",
+  "Type": "Equity",
+  "Region": "United States",
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "currency": "USD",
+  "Currency": "USD",
   "FirstTimeStamp": "2014-03-27T00:00:00"
 }

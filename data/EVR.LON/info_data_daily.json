@@ -1,8 +1,15 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "EVR.LON",
-  "Last Refreshed": "2019-12-27",
+  "LastUpdate": "2020-01-02",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern",
-  "FirstTimeStamp": "2011-11-07T00:00:00"
+  "TimeZone": "US/Eastern",
+  "FirstTimeStamp": "2011-11-07T00:00:00",
+  "Name": "EVRAZ plc",
+  "Type": "Equity",
+  "Region": "United Kingdom",
+  "marketOpen": "08:00",
+  "marketClose": "16:30",
+  "timezone": "UTC+00",
+  "Currency": "GBP"
 }

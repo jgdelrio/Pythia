@@ -10,12 +10,13 @@ import asyncio
 import aiofiles
 import nest_asyncio
 import traceback
+import pandas as pd
 from datetime import datetime, timedelta
 
 from src.config import *
 from src.crawler_semaphore import SemaphoreController
 from src.alpha_vantage_api import alpha_vantage_query, manage_vantage_errors
-from src.utils import LOG, get_tabs, get_index, add_first_ts, read_pandas_data, save_pandas_data, clean_enumeration, transform_column_types
+from src.utils import LOG, get_tabs, get_index, map_field, add_first_ts, read_pandas_data, save_pandas_data, clean_enumeration, transform_column_types
 
 
 nest_asyncio.apply()
@@ -116,13 +117,21 @@ def process_vantage_data(data):
     return info, dat
 
 
+def clean_info(info, file_ref):
+    file_name = file_ref.stem
+    prop_map = fx_parameters if any([k in file_name for k in ["digital", "fx"]]) else stock_parameters
+    return {prop_map.get(key, key): val for key, val in info.items()}
+
+
 async def save_stock_info(info_file, info, old_info=None, create=True):
     """Save/overwrite info data if previous exists or create is True"""
-    into2write = info if old_info is None else {**old_info, **info}     # Select new or merge
+    info2write = info if old_info is None else {**old_info, **info}     # Select new or merge
+    info2write = clean_info(info2write, info_file)
+
     write = True if (info_file.exists() or create) else False
     if write:
-        async with aiofiles.open(info_file.as_posix(), mode="w") as f:
-            await f.write(json.dumps(into2write, indent=2).encode('ascii', 'ignore').decode('ascii'))
+        async with aiofiles.open(info_file.as_posix(), mode="w") as file_ref:
+            await file_ref.write(json.dumps(info2write, indent=2).encode('ascii', 'ignore').decode('ascii'))
 
 
 async def read_info_file(info_file, check=True, verbose=VERBOSE):
@@ -198,6 +207,9 @@ async def update_stock(symbol, category="daily", max_gap=0, api="vantage", verbo
     info_file = build_info_file(folder_name, category)
     info = None
 
+    if symbol in SYMBOLS_TO_IGNORE:
+        return
+
     try:
         if folder_name.exists() and file_name.exists():
             # Verify how much must be updated
@@ -267,7 +279,7 @@ def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage", verbose
 
 
 def search_symbol(symbols=None, api="vantage", verbose=VERBOSE):
-    if symbols == None:
+    if symbols is None:
         print('Function Help:\n' \
               '\tProvide a list of symbols, references, possible names, ISIN ref, SEDOL ref...\n' \
               '\t\tex: ["SSE", "GB0007908733"]\n' \
@@ -288,7 +300,7 @@ def search_symbol(symbols=None, api="vantage", verbose=VERBOSE):
 
 def find_data(ref, db):
     idx = ref.parent.name
-    data = [entry for entry in db if entry["symbol"] == idx]
+    data = [entry for entry in db if entry["Symbol"] == idx]
     if len(data) > 0:
         return data[0]
     else:
@@ -302,19 +314,31 @@ def update_info_with_search(symbols=None, api="vantage", verbose=VERBOSE):
         stock_folders = [x for x in DATA_FOLDER.iterdir() if x.is_dir() and "_" not in x.name]
         symbols = [x.name for x in stock_folders]
 
-    # Search symbols
-    info_from_symbols = search_symbol(symbols, api=api, verbose=verbose)
-    info_from_symbols = [data['bestMatches'][0] for data in info_from_symbols]
-    info_from_symbols = [clean_enumeration(k) for k in info_from_symbols]
+    # Load ISIN DB:
+    isin_db = pd.read_csv(DATA_FOLDER.joinpath(ISIN_DB))
+    isin_db = isin_db[isin_db["ISIN"] != "None"]
+    # Get ISIN available
+    symbols_with_ISIN = [k for k in symbols if k in isin_db.Symbol.tolist()]
+    isin_db = isin_db.set_index("Symbol", verify_integrity=True)
+    symbols_ISIN = isin_db.loc[symbols_with_ISIN, "ISIN"]
+    missing_ISIN = [k for k in symbols if k not in symbols_with_ISIN]
+    missing = pd.DataFrame({"Symbols": missing_ISIN})
+    # Save symbols of missing ISINs
+    missing.to_csv(DATA_FOLDER.joinpath(MISSING_DB), index=False)
+
+    # Search symbols and get best result
+    isin_info = search_symbol(symbols_ISIN.values.tolist(), api=api, verbose=verbose)
+    isin_info_1st_rst = [data['bestMatches'][0] for data in isin_info]
+    clean_isin_info = [clean_enumeration(k) for k in isin_info_1st_rst]
+    clean_info = [{stock_parameters.get(key, key): val for key, val in item.items()} for item in clean_isin_info]
 
     # Build folders list (and create if they don't exist) and file list
-    if "stock_folders" not in locals():
-        stock_folders, _ = list(zip(*[build_path_and_file(symbol, "any") for symbol in symbols]))
+    stock_folders, _ = list(zip(*[build_path_and_file(symbol, "any") for symbol in symbols_ISIN.index.tolist()]))
     info_files = [build_info_file(folder, variation) for folder in stock_folders for variation in INFO_VARIATIONS]
 
-    info_groups = [(info_f, find_data(info_f, info_from_symbols)) for info_f in info_files]
+    info_groups = [(info_f, find_data(info_f, clean_info)) for info_f in info_files]
     # Clean empty groups
-    info_groups = [grp for grp in info_groups if not grp[1] == {}]
+    info_groups_clean = [grp for grp in info_groups if not grp[1] == {}]
 
     # Update info
     loop = asyncio.get_event_loop()
@@ -322,7 +346,7 @@ def update_info_with_search(symbols=None, api="vantage", verbose=VERBOSE):
         asyncio.gather(*(update_stock_info(file_ref, info,
                                            create=False,
                                            verbose=verbose)
-                         for file_ref, info in info_groups))
+                         for file_ref, info in info_groups_clean))
     )
 
 
@@ -345,9 +369,10 @@ def test_retrieve_stocks():
     # ES: ASM Lithography Holding, Bolsas y Mercados ESP, Caixabank, Naturgy Energy, Red Electrica, Endesa, Unibail-Rodamco Se And WFD Uniba
     # TODO: Indeces ["ES0SI0000005", "EU0009658145", "GB0001383545", "FR0003500008"]
 
-    retrieve_stock_list(symbols, category="daily", gap=7)
+    retrieve_stock_list(symbols, category="daily", gap=2)
 
 
 if __name__ == "__main__":
     # update_info_with_search()
-    load_stock_data("AMZN")
+    # load_stock_data("AMZN")
+    test_retrieve_stocks()

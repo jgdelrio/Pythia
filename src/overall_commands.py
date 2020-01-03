@@ -1,10 +1,12 @@
 import re
 import pandas as pd
 
-from src.utils import LOG
+from src.utils import map_field, LOG
 from src.api_manager import gather_info, retrieve_stock_list
 from src.config import DATA_FOLDER, DFT_CRIPTO_PREFIX, DFT_INFO_FILE, DFT_INFO_EXT, VERBOSE, stock_parameters, fx_parameters, crypto_parameters
 
+# TODO: Add fundamentals data and sector information
+# TODO: Add II or Morningstar as extra source
 
 currency_regex = re.compile(r"\A[A-Z]{3}_[A-Z]{3}")
 crypto_regex = re.compile(r"\A" + DFT_CRIPTO_PREFIX + r"[A-Z]{3,4}_[A-Z]{3}")
@@ -114,10 +116,6 @@ def test_update_crypto():
     update_all_crypto_data(crypto_pairs)
 
 
-def map_field(array, field):
-    return [x.get(field, None) for x in array]
-
-
 def get_fx_table(mode="fx", verbose=VERBOSE, v=None):
     verbose = verbose if v is None else v
     if mode == "fx":
@@ -178,10 +176,12 @@ def get_stocks_table(verbose=0, v=None):
 
     # Read info from files
     info = gather_info(map(lambda x: x[1], rows), verbose=verbose)
+    info = [{stock_parameters.get(key, key): val for key, val in item.items()} for item in info]
+
     table_dict = {
         "Symbol": list(map(lambda x: x[0], rows)),
         "Period": list(map(lambda x: x[1].stem.split("_")[-1], rows)),
-        **{val: map_field(info, key) for key, val in stock_parameters.items()}}
+        **{key: map_field(info, key) for key in stock_parameters.values()}}
 
     table = pd.DataFrame(table_dict)
     return table
@@ -195,4 +195,4 @@ if __name__ == "__main__":
     # print(get_fx_table(mode="fx", verbose=3))
     # print(get_fx_table(mode="crypto", verbose=3))
 
-    update_all(gap=2)
+    update_all(gap=1)

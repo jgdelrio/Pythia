@@ -1,0 +1,14 @@
+{
+  "Information": "Monthly Prices (open, high, low, close) and Volumes",
+  "Symbol": "RCH.LON",
+  "Name": "Reach plc",
+  "LastUpdate": "2020-01-02",
+  "TimeZone": "US/Eastern",
+  "Type": "Equity",
+  "Region": "United Kingdom",
+  "marketOpen": "08:00",
+  "marketClose": "16:30",
+  "timezone": "UTC+00",
+  "Currency": "GBP",
+  "FirstTimeStamp": "2000-02-29T00:00:00"
+}

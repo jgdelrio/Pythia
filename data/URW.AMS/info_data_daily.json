@@ -1,0 +1,15 @@
+{
+  "Information": "Daily Prices (open, high, low, close) and Volumes",
+  "Symbol": "URW.AMS",
+  "LastUpdate": "2020-01-02",
+  "Output Size": "Compact",
+  "TimeZone": "US/Eastern",
+  "Name": "Unibail-Rodamco-Westfield",
+  "Type": "Equity",
+  "Region": "Amsterdam",
+  "marketOpen": "09:00",
+  "marketClose": "17:40",
+  "timezone": "UTC+01",
+  "Currency": "EUR",
+  "FirstTimeStamp": "2000-01-03T00:00:00"
+}

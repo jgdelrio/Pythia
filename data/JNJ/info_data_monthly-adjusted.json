@@ -1,15 +1,14 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "JNJ",
-  "Last Refreshed": "2019-12-27 10:58:51",
-  "Time Zone": "US/Eastern",
-  "symbol": "JNJ",
-  "name": "Johnson & Johnson",
-  "type": "Equity",
-  "region": "United States",
+  "LastUpdate": "2019-12-27 10:58:51",
+  "TimeZone": "US/Eastern",
+  "Name": "Johnson & Johnson",
+  "Type": "Equity",
+  "Region": "United States",
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "currency": "USD",
+  "Currency": "USD",
   "FirstTimeStamp": "2000-01-31T00:00:00"
 }

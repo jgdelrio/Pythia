@@ -1,16 +1,15 @@
 {
   "Information": "Daily Time Series with Splits and Dividend Events",
   "Symbol": "PFE",
-  "Last Refreshed": "2019-12-27 10:52:48",
+  "LastUpdate": "2019-12-27 10:52:48",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern",
-  "symbol": "PFE",
-  "name": "Pfizer Inc.",
-  "type": "Equity",
-  "region": "United States",
+  "TimeZone": "US/Eastern",
+  "Name": "Pfizer Inc.",
+  "Type": "Equity",
+  "Region": "United States",
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "currency": "USD",
+  "Currency": "USD",
   "FirstTimeStamp": "1999-12-09T00:00:00"
 }

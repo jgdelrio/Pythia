@@ -1,7 +1,14 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "LMT",
-  "Last Refreshed": "2019-12-27 10:58:48",
-  "Time Zone": "US/Eastern",
-  "FirstTimeStamp": "2000-01-31T00:00:00"
+  "LastUpdate": "2019-12-27 10:58:48",
+  "TimeZone": "US/Eastern",
+  "FirstTimeStamp": "2000-01-31T00:00:00",
+  "Name": "Lockheed Martin Corporation",
+  "Type": "Equity",
+  "Region": "United States",
+  "marketOpen": "09:30",
+  "marketClose": "16:00",
+  "timezone": "UTC-05",
+  "Currency": "USD"
 }

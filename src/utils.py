@@ -1,10 +1,12 @@
 import os
 import sys
 import re
+import json
 import inspect
 import logging
 import pathlib
 import traceback
+import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 from traitlets.config.loader import LazyConfigValue
@@ -22,7 +24,7 @@ def get_logger(name="Pythia", to_stdout=False, level=LOG_LEVEL):
     # TODO: Print to file as well and receive verbose level in the method
     logger = logging.getLogger(name)
     logger.setLevel(level)
-    if to_stdout:
+    if to_stdout and not in_ipynb():
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(level)
         logger.addHandler(ch)
@@ -81,7 +83,11 @@ def read_pandas_data(file_name):
     if not file_name.exists():
         LOG.error(f"ERROR: data not found for {file_name}")
         return None
-    return pd.read_csv(file_name, parse_dates=['date'], index_col='date', date_parser=dateparse)
+    try:
+        return pd.read_csv(file_name, parse_dates=['date'], index_col='date', date_parser=dateparse)
+    except Exception as err:
+        LOG.error(f"Error reading the file {file_name}: {err}")
+        raise Exception(err)
 
 
 def save_pandas_data(file_name, dat, old_data=None, verbose=VERBOSE):
@@ -168,8 +174,10 @@ def get_tabs(symbol, prev=7):
 
     if in_ipynb():
         if n <= 15:
+            return "\t" * 5
+        elif n <= 19:
             return "\t" * 4
-        elif n <= 21:
+        elif n <= 23:
             return "\t" * 3
         elif n <= 27:
             return "\t" * 2
@@ -251,6 +259,10 @@ def add_first_ts(info, first_date):
     return info
 
 
+def map_field(array, field):
+    return [x.get(field, None) for x in array]
+
+
 def cycle(array):
     """Cycle throughout the array indefinitely"""
     idx, n = 0, len(array)
@@ -275,6 +287,43 @@ def transform_column_types(data):
     if "volume" in data.columns:
         data.volume = data.volume.astype(int)
     return data
+
+
+def transform2yaml(val):
+    if val == "":
+        return val
+    elif isinstance(val, str):
+        if re.match(r"\d", val[0]):
+            return f"'{val}'"
+        else:
+            return val
+    else:
+        return val
+
+
+def custom_yaml_text(array, order):
+    output = ""
+    for stock in array:
+        first = False
+        for key in order:
+            if first is False:
+                output += f"- {key}: {transform2yaml(stock[key])}\n"
+                first = True
+            else:
+                output += f"  {key}: {transform2yaml(stock[key])}\n"
+    return output
+
+
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(NpEncoder, self).default(obj)
 
 
 LOG = get_logger(name="Pythia", to_stdout=True, level=LOG_LEVEL)

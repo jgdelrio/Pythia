@@ -2,7 +2,7 @@
   "Information": "Forex Monthly Prices (open, high, low, close)",
   "From Symbol": "GBP",
   "To Symbol": "EUR",
-  "Last Refreshed": "2019-12-27 16:00:00",
-  "Time Zone": "UTC",
+  "LastUpdate": "2019-12-27 16:00:00",
+  "TimeZone": "UTC",
   "FirstTimeStamp": "2001-12-31T00:00:00"
 }

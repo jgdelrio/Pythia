@@ -1,8 +1,9 @@
 {
   "Information": "Daily Time Series with Splits and Dividend Events",
   "Symbol": "3P7.FRK",
-  "Last Refreshed": "2019-12-27",
+  "Name": "Pandora A/S",
+  "LastUpdate": "2020-01-02",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern",
+  "TimeZone": "US/Eastern",
   "FirstTimeStamp": "2010-10-14T00:00:00"
 }

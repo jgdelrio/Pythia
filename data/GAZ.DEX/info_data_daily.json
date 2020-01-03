@@ -1,8 +1,8 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "GAZ.DEX",
-  "Last Refreshed": "2019-12-27",
+  "LastUpdate": "2020-01-02",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern",
+  "TimeZone": "US/Eastern",
   "FirstTimeStamp": "2003-01-22T00:00:00"
 }

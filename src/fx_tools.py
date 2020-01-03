@@ -60,7 +60,7 @@ class FxManager:
             else:
                 self.crypto_data[cryref[0]] = {cryref[1]: data}
 
-    def query(self, fxfrom, fxto, date_ini=None, date_end=None):
+    def query(self, fxfrom, fxto, date_ini=None, date_end=None, latest=False):
         """
         Query FX/Digital data
         :param fxfrom:   from what currency
@@ -93,19 +93,33 @@ class FxManager:
                 else:
                     LOG.warning(f"Fx data to {fxto} not available from {fxfrom}")
                     return None
-            if fxto in self.fx_data.keys():
-                if fxfrom in self.fx_data[fxto].keys():
-                    data = 1 / self.fx_data[fxfrom][fxto]
-        # Apply date filters
-        if date_ini:
-            data = data[data.index >= date_ini]
-        if date_end:
-            data = data[data.index <= date_end]
-        return data
+            else:
+                for key in self.fx_data.keys():
+                    if fxfrom in self.fx_data[key].keys():
+                        if fxto == key:
+                            data = 1 / self.fx_data[fxto][fxfrom]
+                            break
+                        elif fxto in self.fx_data[key].keys():
+                            data = (self.fx_data[key][fxto] / self.fx_data[key][fxfrom]).dropna(axis=0)
+                            break
+                        else:
+                            LOG.warning(f"Fx data from {fxfrom} to {fxto} is not available")
+                            return None
 
-    def query_latest(self, fxfrom, fxto):
-        data = self.query(fxfrom, fxto, date_ini=(datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d"))
-        return data.iloc[-1, :]
+        # Apply date filters
+        if latest:
+            return data.iloc[-1, :]
+        else:
+            if date_ini:
+                data = data[data.index >= date_ini]
+            if date_end:
+                data = data[data.index <= date_end]
+            return data
+
+    def query_latest(self, fxfrom, fxto, field="close"):
+        if fxfrom == fxto:
+            return 1.0
+        return self.query(fxfrom, fxto, latest=True)[field]
 
 
 if __name__ == "__main__":

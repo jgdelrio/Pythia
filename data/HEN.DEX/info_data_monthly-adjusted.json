@@ -1,0 +1,13 @@
+{
+  "Information": "Monthly Adjusted Prices and Volumes",
+  "Symbol": "HEN.DEX",
+  "LastUpdate": "2019-12-30",
+  "TimeZone": "US/Eastern",
+  "Name": "Henkel AG & Co. KGaA",
+  "Type": "Equity",
+  "Region": "XETRA",
+  "marketOpen": "08:00",
+  "marketClose": "20:00",
+  "timezone": "UTC+01",
+  "Currency": "EUR"
+}

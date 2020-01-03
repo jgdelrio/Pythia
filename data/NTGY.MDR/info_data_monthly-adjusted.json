@@ -1,15 +1,14 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "NTGY.MDR",
-  "Last Refreshed": "2019-12-27",
-  "Time Zone": "US/Eastern",
-  "symbol": "NTGY.MDR",
-  "name": "Naturgy Energy Group, S.A.",
-  "type": "Equity",
-  "region": "Madrid",
+  "LastUpdate": "2019-12-27",
+  "TimeZone": "US/Eastern",
+  "Name": "Naturgy Energy Group, S.A.",
+  "Type": "Equity",
+  "Region": "Madrid",
   "marketOpen": "09:00",
   "marketClose": "17:30",
   "timezone": "UTC+01",
-  "currency": "EUR",
+  "Currency": "EUR",
   "FirstTimeStamp": "2018-08-31T00:00:00"
 }

@@ -1,0 +1,14 @@
+{
+  "Information": "Monthly Prices (open, high, low, close) and Volumes",
+  "Symbol": "HEN.DEX",
+  "LastUpdate": "2020-01-02",
+  "TimeZone": "US/Eastern",
+  "Name": "Henkel AG & Co. KGaA",
+  "Type": "Equity",
+  "Region": "XETRA",
+  "marketOpen": "08:00",
+  "marketClose": "20:00",
+  "timezone": "UTC+01",
+  "Currency": "EUR",
+  "FirstTimeStamp": "2000-02-29T00:00:00"
+}

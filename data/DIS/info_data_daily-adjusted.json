@@ -1,16 +1,15 @@
 {
   "Information": "Daily Time Series with Splits and Dividend Events",
   "Symbol": "DIS",
-  "Last Refreshed": "2019-12-27 10:49:47",
+  "LastUpdate": "2020-01-02",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern",
-  "symbol": "DIS",
-  "name": "The Walt Disney Company",
-  "type": "Equity",
-  "region": "United States",
+  "TimeZone": "US/Eastern",
+  "Name": "The Walt Disney Company",
+  "Type": "Equity",
+  "Region": "United States",
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "currency": "USD",
+  "Currency": "USD",
   "FirstTimeStamp": "1999-12-09T00:00:00"
 }

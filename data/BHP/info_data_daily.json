@@ -1,16 +1,15 @@
 {
   "Information": "Daily Prices (open, high, low, close) and Volumes",
   "Symbol": "BHP",
-  "Last Refreshed": "2019-12-27 09:42:47",
+  "LastUpdate": "2020-01-02",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern",
-  "symbol": "BHP",
-  "name": "BHP Group",
-  "type": "Equity",
-  "region": "United States",
+  "TimeZone": "US/Eastern",
+  "Name": "BHP Group",
+  "Type": "Equity",
+  "Region": "United States",
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "currency": "USD",
+  "Currency": "USD",
   "FirstTimeStamp": "1999-12-10T00:00:00"
 }

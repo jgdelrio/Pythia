@@ -1,16 +1,15 @@
 {
   "Information": "Daily Time Series with Splits and Dividend Events",
   "Symbol": "SSE.LON",
-  "Last Refreshed": "2019-12-27",
+  "LastUpdate": "2019-12-27",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern",
-  "symbol": "SSE.LON",
-  "name": "SSE plc",
-  "type": "Equity",
-  "region": "United Kingdom",
+  "TimeZone": "US/Eastern",
+  "Name": "SSE plc",
+  "Type": "Equity",
+  "Region": "United Kingdom",
   "marketOpen": "08:00",
   "marketClose": "16:30",
   "timezone": "UTC+00",
-  "currency": "GBP",
+  "Currency": "GBP",
   "FirstTimeStamp": "1999-12-13T00:00:00"
 }

@@ -1,15 +1,14 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "CS.PAR",
-  "Last Refreshed": "2019-12-27",
-  "Time Zone": "US/Eastern",
-  "symbol": "CS.PAR",
-  "name": "AXA SA",
-  "type": "Equity",
-  "region": "Paris",
+  "LastUpdate": "2019-12-27",
+  "TimeZone": "US/Eastern",
+  "Name": "AXA SA",
+  "Type": "Equity",
+  "Region": "Paris",
   "marketOpen": "09:00",
   "marketClose": "17:30",
   "timezone": "UTC+01",
-  "currency": "EUR",
+  "Currency": "EUR",
   "FirstTimeStamp": "2000-02-29T00:00:00"
 }

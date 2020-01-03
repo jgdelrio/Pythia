@@ -1,0 +1,13 @@
+{
+  "Information": "Monthly Adjusted Prices and Volumes",
+  "Symbol": "URW.AMS",
+  "LastUpdate": "2019-12-31",
+  "TimeZone": "US/Eastern",
+  "Name": "Unibail-Rodamco-Westfield",
+  "Type": "Equity",
+  "Region": "Amsterdam",
+  "marketOpen": "09:00",
+  "marketClose": "17:40",
+  "timezone": "UTC+01",
+  "Currency": "EUR"
+}

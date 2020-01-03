@@ -1,6 +1,7 @@
 {
   "Information": "Monthly Prices (open, high, low, close) and Volumes",
   "Symbol": "GIL",
-  "Last Refreshed": "2019-12-27 10:43:40",
-  "Time Zone": "US/Eastern"
+  "LastUpdate": "2020-01-02",
+  "TimeZone": "US/Eastern",
+  "FirstTimeStamp": "2000-01-31T00:00:00"
 }

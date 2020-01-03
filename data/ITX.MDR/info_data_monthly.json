@@ -1,0 +1,14 @@
+{
+  "Information": "Monthly Prices (open, high, low, close) and Volumes",
+  "Symbol": "ITX.MDR",
+  "LastUpdate": "2020-01-02",
+  "TimeZone": "US/Eastern",
+  "Name": "Industria de Diseno Textil, S.A.",
+  "Type": "Equity",
+  "Region": "Madrid",
+  "marketOpen": "09:00",
+  "marketClose": "17:30",
+  "timezone": "UTC+01",
+  "Currency": "EUR",
+  "FirstTimeStamp": "2001-06-29T00:00:00"
+}

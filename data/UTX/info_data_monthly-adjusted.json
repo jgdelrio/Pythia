@@ -1,7 +1,14 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "UTX",
-  "Last Refreshed": "2019-12-27 11:01:46",
-  "Time Zone": "US/Eastern",
-  "FirstTimeStamp": "2000-01-31T00:00:00"
+  "LastUpdate": "2019-12-27 11:01:46",
+  "TimeZone": "US/Eastern",
+  "FirstTimeStamp": "2000-01-31T00:00:00",
+  "Name": "United Technologies Corporation",
+  "Type": "Equity",
+  "Region": "United States",
+  "marketOpen": "09:30",
+  "marketClose": "16:00",
+  "timezone": "UTC-05",
+  "Currency": "USD"
 }

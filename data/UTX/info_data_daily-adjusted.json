@@ -1,8 +1,15 @@
 {
   "Information": "Daily Time Series with Splits and Dividend Events",
   "Symbol": "UTX",
-  "Last Refreshed": "2019-12-27 10:54:51",
+  "LastUpdate": "2019-12-27 10:54:51",
   "Output Size": "Compact",
-  "Time Zone": "US/Eastern",
-  "FirstTimeStamp": "1999-12-27T00:00:00"
+  "TimeZone": "US/Eastern",
+  "FirstTimeStamp": "1999-12-27T00:00:00",
+  "Name": "United Technologies Corporation",
+  "Type": "Equity",
+  "Region": "United States",
+  "marketOpen": "09:30",
+  "marketClose": "16:00",
+  "timezone": "UTC-05",
+  "Currency": "USD"
 }

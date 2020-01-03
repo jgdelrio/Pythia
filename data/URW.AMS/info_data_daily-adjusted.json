@@ -1,0 +1,14 @@
+{
+  "Information": "Daily Time Series with Splits and Dividend Events",
+  "Symbol": "URW.AMS",
+  "LastUpdate": "2019-12-31",
+  "Output Size": "Full size",
+  "TimeZone": "US/Eastern",
+  "Name": "Unibail-Rodamco-Westfield",
+  "Type": "Equity",
+  "Region": "Amsterdam",
+  "marketOpen": "09:00",
+  "marketClose": "17:40",
+  "timezone": "UTC+01",
+  "Currency": "EUR"
+}

@@ -1,0 +1,15 @@
+{
+  "Information": "Daily Prices (open, high, low, close) and Volumes",
+  "Symbol": "RH",
+  "LastUpdate": "2020-01-02",
+  "Output Size": "Compact",
+  "TimeZone": "US/Eastern",
+  "Name": "RH",
+  "Type": "Equity",
+  "Region": "United States",
+  "marketOpen": "09:30",
+  "marketClose": "16:00",
+  "timezone": "UTC-05",
+  "Currency": "USD",
+  "FirstTimeStamp": "2012-11-02T00:00:00"
+}

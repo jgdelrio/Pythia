@@ -1,0 +1,14 @@
+{
+  "Information": "Daily Time Series with Splits and Dividend Events",
+  "Symbol": "REE.MDR",
+  "LastUpdate": "2019-12-31",
+  "Output Size": "Full size",
+  "TimeZone": "US/Eastern",
+  "Name": "Red Electrica Corporacion, S.A.",
+  "Type": "Equity",
+  "Region": "Madrid",
+  "marketOpen": "09:00",
+  "marketClose": "17:30",
+  "timezone": "UTC+01",
+  "Currency": "EUR"
+}
