@@ -1,15 +1,14 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "LBTYA",
-  "LastUpdate": "2019-12-27 10:58:53",
+  "LastUpdate": "2020-01-02",
   "TimeZone": "US/Eastern",
-  "Symbol": "LBTYA",
   "Name": "Liberty Global Plc",
-  "type": "Equity",
-  "region": "United States",
+  "Type": "Equity",
+  "Region": "United States",
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "currency": "USD",
+  "Currency": "USD",
   "FirstTimeStamp": "2004-07-30T00:00:00"
 }

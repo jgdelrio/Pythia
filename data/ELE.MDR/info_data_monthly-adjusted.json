@@ -1,7 +1,7 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "ELE.MDR",
-  "LastUpdate": "2019-12-31",
+  "LastUpdate": "2020-01-02",
   "TimeZone": "US/Eastern",
   "Name": "Endesa, S.A.",
   "Type": "Equity",
@@ -9,5 +9,6 @@
   "marketOpen": "09:00",
   "marketClose": "17:30",
   "timezone": "UTC+01",
-  "Currency": "EUR"
+  "Currency": "EUR",
+  "FirstTimeStamp": "2000-02-29T00:00:00"
 }

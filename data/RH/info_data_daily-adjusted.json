@@ -1,8 +1,8 @@
 {
   "Information": "Daily Time Series with Splits and Dividend Events",
   "Symbol": "RH",
-  "LastUpdate": "2019-12-31",
-  "Output Size": "Full size",
+  "LastUpdate": "2020-01-02",
+  "Output Size": "Compact",
   "TimeZone": "US/Eastern",
   "Name": "RH",
   "Type": "Equity",
@@ -10,5 +10,6 @@
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "Currency": "USD"
+  "Currency": "USD",
+  "FirstTimeStamp": "2012-11-02T00:00:00"
 }

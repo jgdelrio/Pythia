@@ -1,7 +1,7 @@
 {
   "Information": "Monthly Adjusted Prices and Volumes",
   "Symbol": "RH",
-  "LastUpdate": "2019-12-31",
+  "LastUpdate": "2020-01-02",
   "TimeZone": "US/Eastern",
   "Name": "RH",
   "Type": "Equity",
@@ -9,5 +9,6 @@
   "marketOpen": "09:30",
   "marketClose": "16:00",
   "timezone": "UTC-05",
-  "Currency": "USD"
+  "Currency": "USD",
+  "FirstTimeStamp": "2012-12-31T00:00:00"
 }
