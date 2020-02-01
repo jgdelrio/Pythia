@@ -1,0 +1,25 @@
+Ref: "https://www.sharecast.com/indices/index.html"
+UK:
+  - FTSE100
+  - FTSE250
+  - FTSE350
+  - FTSE-Small-Cap
+  - FTSE-All-Share
+  - FTSE-MIB
+America:
+  - S&P500
+  - DowJones-IA
+  - Nasdaq100
+  - TSX-Composite
+Europe:
+  - DJ-EURO-STOXX10
+  - DJ-EURO-STOXX50
+  - CAC40
+  - XETRA-DAX
+  - IBEX35
+  - PSI20
+  - BEL20
+  - AEX
+Asia:
+  - Hang-Seng
+  - Nikkei225
