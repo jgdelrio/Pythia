@@ -15,7 +15,7 @@ GET_API_FUNCTION_DATA = (
 @pytest.mark.parametrize("data_in, expected", GET_API_FUNCTION_DATA)
 def test_get_api_function(data_in, expected):
     output = get_api_function(data_in)
-    assert_that(output, equal_to(expected), f"Alpha_vantage_function error")
+    assert_that(output, equal_to(expected), "Alpha_vantage_function error")
 
 
 ALPHA_VANTAGE_QUERY_DATA = (

@@ -11,20 +11,35 @@ import pandas as pd
 from datetime import datetime, timedelta
 from traitlets.config.loader import LazyConfigValue
 
-from src.config import DFT_UTC_TS, LOG_LEVEL, LOG_FOLDER, VERBOSE
+from src.config import DFT_UTC_TS, LOG_LEVEL, LOG_FOLDER, LOGGER_FORMAT, VERBOSE
 
 
 dateparse = lambda dates: pd.datetime.strptime(dates, '%Y-%m-%d')
 capture_enum_regex = re.compile("^[\w]*\.\s*")
 
 
+def validate_type(var, istype, name):
+    if not isinstance(var, istype):
+        var_name = istype.__name__ if not isinstance(istype, tuple) else istype[0].__name__
+        raise TypeError(f"{name} symbol must be a {var_name}")
+
+
 def get_logger(name="Pythia", to_stdout=False, level=LOG_LEVEL):
     """Creates a logger with the given name"""
-    log_file = LOG_FOLDER.joinpath("name" + ".log")
+    logging.basicConfig(format=LOGGER_FORMAT, datefmt="[%H:%M:%S]")
     # TODO: Print to file as well and receive verbose level in the method
     logger = logging.getLogger(name)
     logger.setLevel(level)
-    if to_stdout and not in_ipynb():
+
+    # File log
+    log_filename = "pythia_" + datetime.now().strftime("%Y-%m-%d_%H-%M")
+    file_handler = logging.FileHandler(f"{LOG_FOLDER}/{log_filename}.log")
+    logfile_formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+    file_handler.setFormatter(logfile_formatter)
+    logger.addHandler(file_handler)
+    # logger.addHandler(logging.StreamHandler(log_file))
+
+    if to_stdout or in_ipynb():
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(level)
         logger.addHandler(ch)
@@ -64,15 +79,17 @@ def clean_enumeration(data):
         raise Exception(f"Type of data not supported {type(data)}")
 
 
-def clean_pandas_data(dat):
+def dict2pandas_data(dat):
     """Receives a dictionary of data, transform the dict into a pandas DataFrame and clean the column names"""
     try:
         data = pd.DataFrame.from_dict(dat, orient="index")
         # Apply clean names to columns and index
         column_names = clean_enumeration(data.columns.tolist())
         data.columns = column_names
-        data.index.name = 'date'
+        data.index.name = "date"
+        data.index = list(map(dateparse, data.index))
         data.sort_index(axis=0, inplace=True, ascending=True)  # Sort by date
+        data = transform_column_types(data)
     except Exception as err:
         LOG.error(f"Error cleaning dataset: {err}")
         data = None
@@ -85,26 +102,38 @@ def read_pandas_data(file_name):
         return None
     try:
         return pd.read_csv(file_name, parse_dates=['date'], index_col='date', date_parser=dateparse)
+
+    except ValueError as err:
+        if err.args[0] == "'date' is not in list":
+            data = pd.read_csv(file_name, parse_dates=['index'], index_col='index', date_parser=dateparse)
+            data.index.name = "date"
+            return data
+        else:
+            LOG.error(f"Error reading the file {file_name}: {err}")
+            raise Exception(err)
+
     except Exception as err:
         LOG.error(f"Error reading the file {file_name}: {err}")
         raise Exception(err)
 
 
-def save_pandas_data(file_name, dat, old_data=None, verbose=VERBOSE):
+def save_pandas_data(file_name, data, old_data=None, verbose=VERBOSE):
+    # Ensure indices names are aligned
+    data.index.name = "date"
     try:
-        data = clean_pandas_data(dat)
-
         if old_data is not None:
             try:
+                old_data.index.name = "date"
                 # Avoid the last index as it may contain an incomplete week or month
                 last_dt = old_data.index[-2]
                 idx = data.index.get_loc(last_dt.strftime("%Y-%m-%d"))
                 updated_data = pd.concat((old_data.iloc[:-2, :], data.iloc[idx:, :]), axis=0)
-                updated_data.reset_index().to_csv(file_name, index=False, compression="infer")  # Update
+                updated_data.sort_index(axis=0, inplace=True)
+                updated_data.reset_index().to_csv(file_name, index=False, compression="infer")
             except KeyError as err:
                 LOG.error(f"Error updating the data: {err}")
         else:
-            data.reset_index().to_csv(file_name, index=False, compression="infer")          # Save
+            data.reset_index().to_csv(file_name, index=False, compression="infer")
 
         if verbose > 1:
             symbol = file_name.parent.name
@@ -112,6 +141,42 @@ def save_pandas_data(file_name, dat, old_data=None, verbose=VERBOSE):
     except Exception as err:
         LOG.error(f"ERROR saving data:\t\t{file_name.parent.name + file_name.stem} "
                   f"{err.__repr__()} {traceback.print_tb(err.__traceback__)}")
+
+
+def compare_dfs_by_index(df_base, df_new, symbol, maxerror=1e-3, raiseerror=False):
+    """
+    Compare index by index and column by column the differences of two dataframes
+    :param df_base:    base dataframe
+    :param df_new:     new dataframe
+    :param maxerror:   maximum admissible error
+    :param raiseerror: if true, raise an error when maxerror is reached, otherwise return 1 for equality and -1 for inequality
+    """
+    # Verify columns:
+    ind = [k not in df_new.columns for k in df_base.columns]
+    if any(ind):
+        raise ValueError(f"{symbol} new dataframe don't have all columns available in base dataframe. "
+                         f"Missing: {df_base.columns[ind]}")
+
+    accum_errors = 0
+    error_ref = []
+
+    # Find similar indexes
+    ind = [k for k in df_new.index if k in df_base.index]
+    cmp_df_base = df_base[df_base.index.isin(ind)]
+    cmp_df_new = df_new[df_new.index.isin(ind)]
+    for cn in cmp_df_new.columns:
+        error_ind = (abs(cmp_df_base[cn] - cmp_df_new[cn])) >= maxerror
+        n_error = sum(error_ind)
+        if n_error > 0:
+            ts_positions = [ke for eind, ke in zip(error_ind, ind) if eind]
+            LOG.warning(f"{symbol} prev. data error:{get_tabs(symbol, prev=18)}At '{cn}' in positions {ts_positions}")
+            accum_errors += n_error
+            error_ref.extend([(cn, pos) for pos in ts_positions])
+
+    if accum_errors > 0 and raiseerror:
+        raise Exception(f"Data in new dataframe differ from base data. Number of errors: {accum_errors}")
+    else:
+        return accum_errors, error_ref
 
 
 class DelayedAssert:
@@ -169,8 +234,11 @@ class DelayedAssert:
             return "\n".join(report)
 
 
-def get_tabs(symbol, prev=7):
-    n = len(symbol) + prev
+def get_tabs(param, prev=7):
+    if isinstance(param, (int, float)):
+        n = len(str(param)) + prev
+    else:
+        n = len(param) + prev
 
     if in_ipynb():
         if n <= 15:
@@ -186,13 +254,19 @@ def get_tabs(symbol, prev=7):
         else:
             return ""
     else:
-        if n <= 15:
+        if n <= 4:
+            return "\t" * 7
+        elif n <= 8:
+            return "\t" * 6
+        elif n <= 12:
+            return "\t" * 5
+        elif n <= 16:
             return "\t" * 4
-        elif n <= 19:
+        elif n <= 20:
             return "\t" * 3
-        elif n <= 23:
+        elif n <= 24:
             return "\t" * 2
-        elif n <= 27:
+        elif n <= 28:
             return "\t"
         else:
             return ""
@@ -252,7 +326,7 @@ def add_first_ts(info, first_date):
         return info
 
     if "FirstTimeStamp" in info.keys():
-        prev_first_ts = info["FirstTimeStamp"]
+        prev_first_ts = datetime2ts(info["FirstTimeStamp"])
         first_date = prev_first_ts if prev_first_ts <= first_date else first_date
 
     info["FirstTimeStamp"] = ts2datetime(first_date)
@@ -276,16 +350,16 @@ def cycle(array):
 
 
 def transform_column_types(data):
-    if "open" in data.columns:
-        data.open = data.open.astype(float)
-    if "close" in data.columns:
-        data.close = data.close.astype(float)
-    if "high" in data.columns:
-        data.high = data.high.astype(float)
-    if "low" in data.columns:
-        data.low = data.low.astype(float)
-    if "volume" in data.columns:
-        data.volume = data.volume.astype(int)
+    column_names = data.columns
+
+    for cn in column_names:
+        try:
+            data[cn] = data[cn].astype(int)
+        except ValueError:
+            try:
+                data[cn] = data[cn].astype(float)
+            except Exception:
+                pass
     return data
 
 
@@ -326,4 +400,10 @@ class NpEncoder(json.JSONEncoder):
             return super(NpEncoder, self).default(obj)
 
 
-LOG = get_logger(name="Pythia", to_stdout=True, level=LOG_LEVEL)
+def check_monotonic_ts_index(df, symbol, category):
+    if not df.index.is_monotonic:
+        LOG.error(f"Non monotonic index detected for {symbol} {category}")
+        raise ValueError(f"Non monotonic indices at {symbol}")
+
+
+LOG = get_logger(name="Pythia", to_stdout=False, level=LOG_LEVEL)

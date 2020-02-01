@@ -1,7 +1,8 @@
 {
   "Information": "Daily Time Series with Splits and Dividend Events",
   "Symbol": "TSLA",
-  "LastUpdate": "2020-01-02",
-  "Output Size": "Full size",
-  "TimeZone": "US/Eastern"
+  "LastUpdate": "2020-01-28 14:19:26",
+  "Output Size": "Compact",
+  "TimeZone": "US/Eastern",
+  "FirstTimeStamp": "2010-06-29T00:00:00"
 }

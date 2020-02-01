@@ -16,7 +16,8 @@ from datetime import datetime, timedelta
 from src.config import *
 from src.crawler_semaphore import SemaphoreController
 from src.alpha_vantage_api import alpha_vantage_query, manage_vantage_errors
-from src.utils import LOG, get_tabs, get_index, map_field, add_first_ts, read_pandas_data, save_pandas_data, clean_enumeration, transform_column_types
+from src.utils import LOG, get_tabs, get_index, map_field, add_first_ts, read_pandas_data, save_pandas_data, \
+    clean_enumeration, transform_column_types, dict2pandas_data, compare_dfs_by_index, check_monotonic_ts_index
 
 
 nest_asyncio.apply()
@@ -44,7 +45,7 @@ def build_path_and_file(symbol, category):
     return folder_name, file_name
 
 
-def delta_surpassed(last_date, max_gap, category):
+def delta_now_surpassed(last_date, max_gap, category):
     now = datetime.now()
     delta = (now - last_date).days
 
@@ -73,9 +74,11 @@ async def query_data(symbol, category=None, api="vantage", verbose=VERBOSE, **kw
 
     if api == "vantage":
         url, params = alpha_vantage_query(symbol, category, key=KEYS_SET["alpha_vantage"], **kwargs)
-        LOG.info(f"Retrieving {symbol}:{get_tabs(symbol, prev=12)}From '{api}' API")
+        LOG.info("Retrieving {}:{}From '{}' API".format(symbol, get_tabs(symbol, prev=12), api))
+    elif api == "quandl":
+        key = KEYS_SET["quandl"]
     else:
-        LOG.error(f"Not supported api {api}")
+        LOG.error("Not supported api {}".format(api))
 
     counter = 0
     while counter <= QUERY_RETRY_LIMIT:
@@ -108,7 +111,7 @@ def process_vantage_data(data):
         try:
             info = clean_enumeration(metadata)
         except Exception as err:
-            LOG.ERROR(f"ERROR cleaning info: {metadata}")
+            LOG.ERROR("ERROR cleaning info: {}".format(metadata))
             info = metadata
     else:
         info = {}
@@ -141,13 +144,13 @@ async def read_info_file(info_file, check=True, verbose=VERBOSE):
         async with aiofiles.open(info_file, "r") as info:
             data = await info.read()
             if verbose > 1:
-                LOG.info(f"Info file read:{get_tabs('', prev=15)}{info_file}")
+                LOG.info("Info file read:{}{}".format(get_tabs('', prev=15), info_file))
             return json.loads(data)
     else:
         if check:
-            LOG.error(f"ERROR: No info found at {info_file}")
+            LOG.error("ERROR: No info found at {}".format(info_file))
         if verbose > 1:
-            LOG.warning(f"Info file: {info_file}\tDO NOT EXISTS!")
+            LOG.warning("Info file: {}\tDO NOT EXISTS!".format(info_file))
         return {}
 
 
@@ -166,15 +169,16 @@ async def update_stock_info(info_file, info, create=True, verbose=VERBOSE):
         await save_stock_info(info_file, clean_info, old_info=old_info, create=create)
         if verbose > 1:
             symbol = info_file.parent.name
-            LOG.info(f"Updating {symbol} info:{get_tabs(symbol, prev=15)}OK")
+            LOG.info("Updating {} info:{}OK".format(symbol, get_tabs(symbol, prev=15)))
     except Exception as err:
-        LOG.error(f"ERROR updating info: {info_file}. Msg: {err.__repr__()} {traceback.print_tb(err.__traceback__)}")
+        LOG.error("ERROR updating info: {}. Msg: {} {}".format(info_file, err.__repr__(),
+                                                               traceback.print_tb(err.__traceback__)))
 
 
 def load_stock_data(symbols, period="daily", date_ini=None, date_end=None):
     unique_value = False
     if period not in INFO_VARIATIONS:
-        raise ValueError(f"The period {period} is not supported. Please select one among {INFO_VARIATIONS}")
+        raise ValueError("The period {} is not supported. Please select one among {}".format(period, INFO_VARIATIONS))
     if isinstance(symbols, str):
         unique_value = True
         symbols = [symbols]
@@ -197,15 +201,30 @@ def load_stock_data(symbols, period="daily", date_ini=None, date_end=None):
         return data_group
 
 
-def search_latest_stock_data(symbol):
-    data = load_stock_data(symbol, date_ini=(datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d"))
-    return data.iloc[-1, :]
+def get_latest_stock_data(symbol, period="daily"):
+    data = load_stock_data(symbol, period=period)
+    return data.iloc[-1, :]                             # Return latest available
 
 
-async def update_stock(symbol, category="daily", max_gap=0, api="vantage", verbose=VERBOSE):
+def get_dividends(symbol, date_ini=None, date_end=None):
+    """
+    Retrieve the dividends of a symbol. Total in history if no dates are specified.
+    The dates are inclusive and filter the data accordingly.
+    """
+    # TODO
+    return 0
+
+
+async def update_stock(symbol, mode="stock", category="daily", max_gap=0, api="vantage", verbose=VERBOSE):
     folder_name, file_name = build_path_and_file(symbol, category)
     info_file = build_info_file(folder_name, category)
     info = None
+    if mode == "stock":
+        fields = STOCK_FIELDS
+    elif mode == "fx":
+        fields = FX_FIELDS
+    elif mode == "crypto":
+        fields = CRYPTO_FIELDS
 
     if symbol in SYMBOLS_TO_IGNORE:
         return
@@ -213,37 +232,84 @@ async def update_stock(symbol, category="daily", max_gap=0, api="vantage", verbo
     try:
         if folder_name.exists() and file_name.exists():
             # Verify how much must be updated
-            data_stored = read_pandas_data(file_name)
+            if mode == "crypto":
+                data_stored = read_pandas_data(file_name)
+            else:
+                data_stored = read_pandas_data(file_name).reindex(fields, axis=1)
+            check_monotonic_ts_index(data_stored, symbol, category)
             first_date = data_stored.index[0]
             last_date = data_stored.index[-1]
 
-            if delta_surpassed(last_date, max_gap, category):
-                LOG.info(f"Updating {symbol} data...")
+            if delta_now_surpassed(last_date, max_gap, category):
+                LOG.info("Updating {} data...".format(symbol))
                 # Retrieve only last range (alpha_vantage 100pts)
-                data = await query_data(symbol, category=category, api="vantage", outputsize="compact")
+                data = await query_data(symbol, category=category, api=api, outputsize="compact")
                 if data in [None, {}]:
-                    LOG.WARNING(f"No data received for {symbol}")
+                    LOG.WARNING("No data received for {}".format(symbol))
                     return
 
-                info, dat = process_vantage_data(data)
-                info = add_first_ts(info, first_date)
+                if api in ["vantage"]:
+                    info, dat = process_vantage_data(data)
+                    data_df = dict2pandas_data(dat)                     # Transform to df
+                    if mode is not "crypto":
+                        data_df = data_df.reindex(fields, axis=1)       # Ensure ordered columns
+                    info = add_first_ts(info, first_date)
+                else:
+                    raise ValueError("Invalid api {}".format(api))
 
-                save_pandas_data(file_name, dat, old_data=data_stored, verbose=verbose)
+                # Correct data held if necessary
+                n_errors, error_ref = compare_dfs_by_index(data_stored, data_df, symbol, raiseerror=False)
+                if n_errors > 0:
+                    LOG.warning("Detected {} errors:{}{} {}".format(
+                        n_errors, get_tabs(n_errors, prev=7), symbol, category))
+                if category in ["daily", "monthly"] or "digital" in category:
+                    # Non-adjusted data must be the same as what was stored
+                    if n_errors > 0:
+                        # Overwrite old data
+                        ind_old = [k in data_df.index for k in data_stored.index]
+                        ind_new = [k in data_stored.index for k in data_df.index]
+                        data_stored.iloc[ind_old, :] = data_df.iloc[ind_new, :]
+                    save_pandas_data(file_name, data_df, old_data=data_stored, verbose=verbose)
+
+                elif "adjusted" in category:
+                    # An event (split, dividend, etc) may have happened
+                    if n_errors > 0:
+                        # Verify first days
+                        errors_at_beg, _ = compare_dfs_by_index(data_stored, data_df.head(3), symbol, raiseerror=False)
+                        if errors_at_beg > 0:
+                            # Overwrite all old data
+                            data = await query_data(symbol, category=category, api=api)
+                            info, dat = process_vantage_data(data)
+                            data_df = dict2pandas_data(dat)                         # Transform to df
+                            if mode is not "crypto":
+                                data_df = data_df.reindex(fields, axis=1)           # Ensure ordered columns
+                            save_pandas_data(file_name, data_df, verbose=verbose)
+                        else:
+                            # Overwrite only indices with errors
+                            for eref in error_ref:
+                                LOG.warning("Correcting {} {}:{}{}".format(
+                                    symbol, category, get_tabs(symbol+category, prev=17), eref))
+                                data_stored.loc[eref[1], eref[0]] = data_df.loc[eref[1], eref[0]]
+                            save_pandas_data(file_name, data_df, old_data=data_stored, verbose=verbose)
             else:
                 if verbose > 1:
-                    LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}Ignored. Data {category} < {max_gap}d old")
+                    LOG.info("Updating {}:{}Ignored. Data {} < {}d old".format(
+                        symbol, get_tabs(symbol, prev=10), category, max_gap))
                 return
         else:
             # Download and save new data
             if verbose > 1:
-                LOG.info(f"Updating {symbol} ...")
+                LOG.info("Updating {} ...".format(symbol))
             data = await query_data(symbol, category=category, api=api)
             if data in [None, {}]:
-                LOG.WARNING(f"No data received for {symbol}")
+                LOG.WARNING("No data received for {}".format(symbol))
                 return
 
             info, dat = process_vantage_data(data)
-            save_pandas_data(file_name, dat, verbose=verbose)
+            data_df = dict2pandas_data(dat)                         # Transform to df
+            if mode is not "crypto":
+                data_df = data_df.reindex(fields, axis=1)           # Ensure ordered columns
+            save_pandas_data(file_name, data_df, verbose=verbose)
 
         # Save/Update info
         if info:
@@ -252,10 +318,11 @@ async def update_stock(symbol, category="daily", max_gap=0, api="vantage", verbo
         if verbose > 1:
             LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}Finished")
     except Exception as err:
-        LOG.info(f"Updating {symbol}:{get_tabs(symbol, prev=10)}ERROR: {err.__repr__()} {traceback.print_tb(err.__traceback__)}")
+        LOG.info("Updating {}:{}ERROR: {} {}".format(
+            symbol, get_tabs(symbol, prev=10), err.__repr__(), traceback.print_tb(err.__traceback__)))
 
 
-def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage", verbose=VERBOSE):
+def retrieve_stock_list(symbols, mode="stock", category="daily", gap=7, api="vantage", verbose=VERBOSE):
     """
     Provided a list of symbols, update the info of the stocks for any stock where there is
     no information in the last (gap) days.
@@ -269,10 +336,10 @@ def retrieve_stock_list(symbols, category="daily", gap=7, api="vantage", verbose
         raise TypeError("symbols must be a list")
 
     if isinstance(api, list):
-        tasks = (update_stock(nsymbol, category=category, max_gap=gap, api=napi, verbose=verbose)
+        tasks = (update_stock(nsymbol, mode=mode, category=category, max_gap=gap, api=napi, verbose=verbose)
                  for nsymbol, napi in zip(symbols, api))
     else:
-        tasks = (update_stock(symbol, category=category, max_gap=gap, api=api) for symbol in symbols)
+        tasks = (update_stock(symbol, mode=mode, category=category, max_gap=gap, api=api) for symbol in symbols)
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(asyncio.gather(*tasks))
@@ -304,7 +371,7 @@ def find_data(ref, db):
     if len(data) > 0:
         return data[0]
     else:
-        LOG.warning(f"WARNING: Reference {idx} not found")
+        LOG.warning("WARNING: Reference {} not found".format(idx))
         return {}
 
 
@@ -367,12 +434,12 @@ def test_retrieve_stocks():
     # ISA: MMM, Blizzard, Alphabet, Applied materias, BASF Diageo, Gilead Johnson&Johnson, Judges Scientific, Nvidia, Pfizer, Rio Tinto, SSE, Walt Disney
     # SIPP: Altria, Amazon, Axa, BHP, BT, Dassault Systemes, Henkel AG&CO, Liberty Global, National Grid, Reach PLC, Renault, Sartorius AG, Starbucks
     # ES: ASM Lithography Holding, Bolsas y Mercados ESP, Caixabank, Naturgy Energy, Red Electrica, Endesa, Unibail-Rodamco Se And WFD Uniba
-    # TODO: Indeces ["ES0SI0000005", "EU0009658145", "GB0001383545", "FR0003500008"]
+    # TODO: Indices ["ES0SI0000005", "EU0009658145", "GB0001383545", "FR0003500008"]
 
     retrieve_stock_list(symbols, category="daily", gap=2)
 
 
 if __name__ == "__main__":
     # update_info_with_search()
-    # load_stock_data("AMZN")
-    test_retrieve_stocks()
+    load_stock_data("BARC.LON")
+    # test_retrieve_stocks()

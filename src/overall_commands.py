@@ -1,9 +1,9 @@
 import re
 import pandas as pd
 
-from src.utils import map_field, LOG
+from src.utils import map_field, validate_type, LOG
 from src.api_manager import gather_info, retrieve_stock_list
-from src.config import DATA_FOLDER, DFT_CRIPTO_PREFIX, DFT_INFO_FILE, DFT_INFO_EXT, VERBOSE, stock_parameters, fx_parameters, crypto_parameters
+from src.config import *
 
 # TODO: Add fundamentals data and sector information
 # TODO: Add II or Morningstar as extra source
@@ -13,16 +13,42 @@ crypto_regex = re.compile(r"\A" + DFT_CRIPTO_PREFIX + r"[A-Z]{3,4}_[A-Z]{3}")
 info_data_pattern = DFT_INFO_FILE + r"*" + DFT_INFO_EXT
 
 
-def validate_list(sym):
-    if not isinstance(sym, (tuple, list)):
-        raise TypeError("The parameter must be a list or tuple")
-
-
 def get_stock_folders():
     """Return list of existing stock folders"""
-    stock_folders = [x for x in DATA_FOLDER.iterdir() if x.is_dir() and "_" not in x.name]
+    stock_folders = [x for x in DATA_FOLDER.iterdir()
+                     if x.is_dir()
+                     and "_" not in x.name
+                     and x.name not in FOLDERS_EXCLUDED]
     stock_folders.sort()
     return stock_folders
+
+
+def get_fx_folders():
+    """Return list of folders for physical and digital currencies"""
+    fx_folders = [x for x in DATA_FOLDER.iterdir()
+                  if x.is_dir()
+                  and currency_regex.match(x.name)
+                  and x.name not in FOLDERS_EXCLUDED]
+    fx_folders.sort()
+    return fx_folders
+
+
+def get_crypto_folders():
+    """Return list of folders for physical and digital currencies"""
+    crytp_folders = [x for x in DATA_FOLDER.iterdir()
+                     if x.is_dir()
+                     and crypto_regex.match(x.name)
+                     and x.name not in FOLDERS_EXCLUDED]
+    crytp_folders.sort()
+    return crytp_folders
+
+
+def get_indices_folders():
+    return DATA_FOLDER.joinpath(INDEX_FOLDER)
+
+
+def get_materials_folders():
+    return DATA_FOLDER.joinpath(MATERIALS_FOLDER)
 
 
 def get_stocks_references():
@@ -31,20 +57,6 @@ def get_stocks_references():
     stock_names = [x.name for x in stock_folders]
     stock_names.sort()
     return stock_names, stock_folders
-
-
-def get_fx_folders():
-    """Return list of folders for physical and digital currencies"""
-    fx_folders = [x for x in DATA_FOLDER.iterdir() if x.is_dir() and currency_regex.match(x.name)]
-    fx_folders.sort()
-    return fx_folders
-
-
-def get_crypto_folders():
-    """Return list of folders for physical and digital currencies"""
-    crytp_folders = [x for x in DATA_FOLDER.iterdir() if x.is_dir() and crypto_regex.match(x.name)]
-    crytp_folders.sort()
-    return crytp_folders
 
 
 def get_fx_references():
@@ -69,12 +81,12 @@ def update_all_stock_data(stocks=None, gap=7, verbose=VERBOSE):
     """Get all existing stocks and update their info"""
     if stocks is None:
         stocks, _ = get_stocks_references()
-    validate_list(stocks)
+    validate_type(stocks, (list, tuple), 'stocks')
 
-    retrieve_stock_list(stocks, category="daily", gap=gap, verbose=verbose)
-    retrieve_stock_list(stocks, category="monthly", gap=gap, verbose=verbose)
-    retrieve_stock_list(stocks, category="daily-adjusted", gap=gap, verbose=verbose)
-    retrieve_stock_list(stocks, category="monthly-adjusted", gap=gap, verbose=verbose)
+    retrieve_stock_list(stocks, mode="stock", category="daily", gap=gap, verbose=verbose)
+    retrieve_stock_list(stocks, mode="stock", category="monthly", gap=gap, verbose=verbose)
+    retrieve_stock_list(stocks, mode="stock", category="daily-adjusted", gap=gap, verbose=verbose)
+    retrieve_stock_list(stocks, mode="stock", category="monthly-adjusted", gap=gap, verbose=verbose)
     LOG.info("Stocks update finished!")
 
 
@@ -84,11 +96,11 @@ def update_all_fx_data(fx_pairs=None, gap=7, verbose=VERBOSE, v=None):
     if fx_pairs is None:
         fx_pairs, _ = get_fx_references()
     # Validation
-    validate_list(fx_pairs)
-    validate_list(fx_pairs[0])
+    validate_type(fx_pairs, (list, tuple), "fx_pairs")
+    validate_type(fx_pairs[0], (list, tuple), "fx_pairs[0]")
     # Retrieval
-    retrieve_stock_list(fx_pairs, category="fx_daily", gap=gap, verbose=verbose)
-    retrieve_stock_list(fx_pairs, category="fx_monthly", gap=gap, verbose=verbose)
+    retrieve_stock_list(fx_pairs, mode="fx", category="fx_daily", gap=gap, verbose=verbose)
+    retrieve_stock_list(fx_pairs, mode="fx", category="fx_monthly", gap=gap, verbose=verbose)
     LOG.info("FX update finished!")
 
 
@@ -96,11 +108,11 @@ def update_all_crypto_data(crypto_pairs=None, gap=7, verbose=VERBOSE):
     """Get all existing cryptocurrencies and update their info"""
     if crypto_pairs is None:
         crypto_pairs, _ = get_crypto_references()
-    validate_list(crypto_pairs)
-    validate_list(crypto_pairs[0])
+    validate_type(crypto_pairs, (list, tuple), "crypto_pairs")
+    validate_type(crypto_pairs[0], (list, tuple), "crypto_pairs[0]")
 
-    retrieve_stock_list(crypto_pairs, category="digital_daily", gap=gap, verbose=verbose)
-    retrieve_stock_list(crypto_pairs, category="digital_monthly", gap=gap, verbose=verbose)
+    retrieve_stock_list(crypto_pairs, mode="crypto", category="digital_daily", gap=gap, verbose=verbose)
+    retrieve_stock_list(crypto_pairs, mode="crypto", category="digital_monthly", gap=gap, verbose=verbose)
     LOG.info("Crypto update finished!")
 
 
@@ -123,7 +135,7 @@ def get_fx_table(mode="fx", verbose=VERBOSE, v=None):
     elif mode == "crypto":
         id_refs, id_folders = get_crypto_references()
     else:
-        raise ValueError(f"Invalid mode {mode}. Valid modes include 'fx' and 'crypto'")
+        raise ValueError("Invalid mode {}. Valid modes include 'fx' and 'crypto'".format(mode))
     return __create_table(zip(id_folders, id_refs), variant=mode, verbose=verbose)
 
 
@@ -191,8 +203,6 @@ if __name__ == "__main__":
     # stocks = ['BAS.DEX']
     # retrieve_stock_list(stocks)
 
-    # print(get_stocks_table(verbose=3))
-    # print(get_fx_table(mode="fx", verbose=3))
-    # print(get_fx_table(mode="crypto", verbose=3))
+    # print(get_crypto_folders())
 
-    update_all(gap=1)
+    update_all(gap=3)

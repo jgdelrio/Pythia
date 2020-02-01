@@ -11,7 +11,7 @@ from collections import namedtuple
 from src.config import *
 from src.utils import LOG, NpEncoder, custom_yaml_text
 from src.fx_tools import FxManager
-from src.api_manager import search_latest_stock_data
+from src.api_manager import get_latest_stock_data, get_dividends
 from src.overall_commands import get_stocks_table
 
 # TODO: Incorporate dividends in the evaluation
@@ -21,6 +21,31 @@ _PORTFOLIO_PROPERTIES = ["Symbol", "ISIN", "Name", "Quantity", "Price", "Factor"
                           "Date", "Fees", "SettledCurrency", "FxExchange", "TotalCost", "Group"]
 
 PortfolioPropertiesTuple = namedtuple("PortfolioProperties", " ".join(_PORTFOLIO_PROPERTIES))
+
+_SUMMARY_BASE_PROPERTIES = [
+    "Symbol", "ISIN", "Quantity", "LastValue", "Factor", "Currency", "Group",
+    "AbsGain", "BookCost", "Dividends", "Period", "Fees", "AbsGainMarket"]
+_SUMMARY_PROPERTIES = [
+    *_SUMMARY_BASE_PROPERTIES,
+    "PctGain_Abs", "PctGain_Yearly",
+    "PctGain_MarketAbs", "PctGain_MarketYearly",
+    "PctGainDiv_Abs", "PctGainDiv_Yearly"]
+summary_base_dict = {prop: None for prop in _SUMMARY_BASE_PROPERTIES}
+summary_dict = {prop: None for prop in _SUMMARY_PROPERTIES}
+
+
+def distribute_fees(entry_fee, exit_fee, entry_qty, exit_qty, entry_fx, exit_fx):
+    if exit_qty > entry_qty:
+        # Selling from multiple buy orders. Distribute fees.
+        total_fee = entry_fee + exit_fee * abs(entry_qty / exit_qty)
+        return total_fee, entry_qty
+    elif exit_qty < entry_qty:
+        # Selling part. Distribute fees.
+        total_fee = entry_fee * abs(exit_qty / entry_qty) + exit_fee
+        return total_fee, exit_qty
+    else:
+        total_fee = entry_fee + exit_fee
+        return total_fee, entry_qty
 
 
 class PortfolioManager:
@@ -48,7 +73,7 @@ class PortfolioManager:
             if not all([isinstance(k, dict) for k in orders]):
                 raise TypeError("All elements within the orders list must be dictionaries")
             elif not all([prop in order.keys() for prop in _PORTFOLIO_PROPERTIES for order in orders]):
-                raise ValueError(f"the orders must contain all these properties {_PORTFOLIO_PROPERTIES}")
+                raise ValueError("the orders must contain all these properties {}".format(_PORTFOLIO_PROPERTIES))
         else:
             raise TypeError("orders must be a dictionary or a list of dictionaries")
 
@@ -59,7 +84,7 @@ class PortfolioManager:
 
     def save_portfolio(self, portfolio_name, mode="yml"):
         if portfolio_name not in self.portfolios.keys():
-            raise ValueError(f"Portfolio {portfolio_name} not found")
+            raise ValueError("Portfolio {} not found".format(portfolio_name))
         portfolio = self.portfolios[portfolio_name]
 
         if mode == "json":
@@ -75,17 +100,17 @@ class PortfolioManager:
 
     def save_report(self, portfolio_name, date_ref=None, mode="json"):
         if portfolio_name not in self.reports.keys():
-            raise ValueError(f"Portfolio {portfolio_name} not found")
+            raise ValueError("Portfolio {} not found".format(portfolio_name))
         if date_ref is None:
             date_references = list(self.reports[portfolio_name].keys())
             if len(date_references) > 0:
                 date_references.sort()
                 date_ref = date_references[-1]
             else:
-                LOG.warning(f"There are no reports for Portfolio {portfolio_name}")
+                LOG.warning("There are no reports for Portfolio {}".format(portfolio_name))
         else:
             if date_ref not in self.reports[portfolio_name].keys():
-                raise ValueError(f"The date reference {date_ref} was not found in Portfolio {portfolio_name}")
+                raise ValueError("The date reference {} was not found in Portfolio {}".format(date_ref, portfolio_name))
 
         if mode == "json":
             report_ref = REPORTS_FOLDER.joinpath(portfolio_name + "_" + date_ref + ".json")
@@ -153,7 +178,7 @@ class PortfolioManager:
                 self.portfolios[portfolio_name] = portfolio_data
 
         else:
-            LOG.warning(f"The portfolio file {portfolio_file} was not found at {ref}")
+            LOG.warning("The portfolio file {} was not found at {ref}".format(portfolio_file, ref))
             return -1
 
     def load_existing_portfolios(self, suffix=[".json", ".yml"], folder=None):
@@ -178,7 +203,7 @@ class PortfolioManager:
 
     def total_portfolio_cost(self, portfolio, fx="GBP"):
         if portfolio not in self.portfolios.keys():
-            raise ValueError(f"Portfolio {portfolio} not found")
+            raise ValueError("Portfolio {} not found".format(portfolio))
         cost_grp, currencies = zip(*[(order["TotalCost"], order["SettledCurrency"]) for order in self.portfolios[portfolio]])
         return sum(cost_grp)
 
@@ -200,41 +225,74 @@ class PortfolioManager:
         db.to_csv(db_ref, index=False)
 
     @staticmethod
+    def calculate_pct_from_closed_order(closed_order):
+        output = summary_dict.copy()
+        yearly_factor = 356 / closed_order.get("Period", 365)
+        output["PctGain_Abs"] = closed_order.get("abs_gain", 0) / closed_order.get("BookCost", 1)
+        output["PctGain_Yearly"] = output.get("PctGain_Abs") * yearly_factor
+        output["PctGain_MarketAbs"] =
+        output["PctGain_MarketYearly"] =
+        output["PctGainDiv_Abs"] =
+        output["PctGainDiv_Yearly"] =
+        return output
+
+    perc_yearly_gain = perc_abs_gain * yearly_factor
+
+    perc_market_gain = market_gain / (
+            fees / exit_order["FxExchange"] + entry_order["Quantity"] * entry_order["Price"] * entry_order["Factor"])
+
+    perc_yearly_market_gain = perc_market_gain * yearly_factor
+
+    return {
+        "Factor": entry_order["Factor"],
+        "Currency": entry_order["Currency"],
+        'Group': entry_order["Group"],
+        "AbsGain": abs_gain,
+        "YearlyPctGain": perc_yearly_gain,
+        "AbsMarketGain": market_gain,
+        "PctMarketGain": perc_market_gain,
+        "YearlyPctMarketGain": perc_yearly_market_gain
+    }
+    # _SUMMARY_BASE_PROPERTIES = [
+    #     "Symbol", "ISIN", "Quantity", "LastValue", "Factor", "Currency", "Group",
+    #     "AbsGain", "BookCost", "Dividends", "Period", "Fees", "AbsGainMarket"]
+    # _SUMMARY_PROPERTIES = [
+    #     *_SUMMARY_BASE_PROPERTIES,
+    #     "PctGain_Abs", "PctGain_Yearly",
+    #     "PctGain_MarketAbs", "PctGain_MarketYearly",
+    #     "PctGainDiv_Abs", "PctGainDiv_Yearly"]
+
+
+
+    @staticmethod
     def report_from_order(entry_order, exit_order):
-        symbol = entry_order["Symbol"]
-        days_diff = (datetime.strptime(exit_order["Date"], "%Y-%m-%d") -
-                     datetime.strptime(entry_order["Date"], "%Y-%m-%d")).days
-        fees = entry_order["Fees"] + exit_order["Fees"] * abs(entry_order["Quantity"] / exit_order["Quantity"])
-        market_gain = entry_order["Factor"] * entry_order["Quantity"] * (exit_order["Price"] - entry_order["Price"]) - fees * entry_order["FxExchange"]
+        closed_order_base = summary_base_dict.copy()
+        days_period = (datetime.strptime(exit_order["Date"], "%Y-%m-%d") -
+                       datetime.strptime(entry_order["Date"], "%Y-%m-%d")).days
+
+        closed_order_base["Symbol"] = entry_order["Symbol"]
+        closed_order_base["ISIN"] = entry_order["ISIN"]
+        closed_order_base["BookCost"] = entry_order["TotalCost"]
+        closed_order_base["Period"] = days_period
+        closed_order_base["LastValue"] = exit_order["Price"]
+        closed_order_base["Factor"] = entry_order["Factor"]
+        closed_order_base["Currency"] = entry_order["Currency"]
+        closed_order_base["Group"] = entry_order["Group"]
+        closed_order_base["Fees"], closed_order_base["Quantity"] = distribute_fees(
+            entry_order["Fees"], exit_order["Fees"],
+            entry_order["Quantity"], exit_order["Quantity"],
+            entry_order["FxExchange"], exit_order["FxExchange"])
+
+        closed_order_base["AbsGainMarket"] = \
+            entry_order["Factor"] * closed_order_base["Quantity"] * (exit_order["Price"] - entry_order["Price"]) - \
+            closed_order_base["Fees"]
         # Consider possible increase/decrease of the currency
-        abs_gain = market_gain * entry_order["FxExchange"] / exit_order["FxExchange"]
+        closed_order_base["AbsGain"] = closed_order_base["AbsGainMarket"] * \
+                                       entry_order["FxExchange"] / exit_order["FxExchange"]
+        closed_order_base["Dividends"] = get_dividends(
+            entry_order["Symbol"], entry_order["Date"], exit_order["Date"])
 
-
-        perc_abs_gain = abs_gain / entry_order["TotalCost"]
-        perc_market_gain = market_gain / (fees/exit_order["FxExchange"] + entry_order["Quantity"] * entry_order["Price"] * entry_order["Factor"])
-
-        yearly_factor = 356 / days_diff
-        perc_yearly_gain = perc_abs_gain * yearly_factor
-        perc_yearly_market_gain = perc_market_gain * yearly_factor
-
-        return {
-            "Symbol": symbol,
-            "ISIN": entry_order["ISIN"],
-            "Quantity": entry_order["Quantity"],
-            "LastValue": exit_order["Price"],
-            "Factor": entry_order["Factor"],
-            "Currency": entry_order["Currency"],
-            'Group': entry_order["Group"],
-            "AbsGain": abs_gain,
-            "BookCost": entry_order["TotalCost"],
-            "Period": days_diff,
-            "Fees": fees,
-            "PctAbsGain": perc_abs_gain,
-            "YearlyPctGain": perc_yearly_gain,
-            "AbsMarketGain": market_gain,
-            "PctMarketGain": perc_market_gain,
-            "YearlyPctMarketGain": perc_yearly_market_gain
-        }
+        return closed_order_base
 
     def aggregate_orders(self, orders):
         norders = len(orders)
@@ -274,7 +332,7 @@ class PortfolioManager:
             }
             return aggregated
 
-    def aggregated_sale(self, orders):
+    def aggregated_sale(self, orders, adjusted=False):
         total_qty = orders.Quantity.sum()
         qty_weighted = (orders.Quantity / total_qty).values
         book_cost = orders.TotalCost.sum()
@@ -284,7 +342,10 @@ class PortfolioManager:
 
         # Value now
         symbol = orders.Symbol.values[0]
-        val = search_latest_stock_data(symbol)["close"]
+        if adjusted:
+            val = get_latest_stock_data(symbol, period="daily-adjusted")["close"]
+        else:
+            val = get_latest_stock_data(symbol, period="daily")["close"]
         fx_exchange = self.fx_manager.query_latest(orders.Currency.values[0], orders.SettledCurrency.values[0])
         stock_factor = orders.Factor.values[0]
         market_value = total_qty * val * stock_factor
@@ -365,7 +426,7 @@ class PortfolioManager:
         :param group:          if the analysis if for one specific group
         """
         if portfolio_name not in self.portfolios.keys():
-            raise ValueError(f"Portfolio {portfolio_name} not found. It is not possible to build report")
+            raise ValueError("Portfolio {} not found. It is not possible to build report".format(portfolio_name))
         # Initialization
         stock_report = []
         stock_report_closed = []
@@ -376,7 +437,7 @@ class PortfolioManager:
             group = group.upper()
             orders = orders[orders["Group"] == group]
             if orders.shape[0] < 1:
-                LOG.warning(f"The group {group} do not have orders within the Portfolio {portfolio_name}")
+                LOG.warning("The group {} do not have orders within the Portfolio {}".format(group, portfolio_name))
 
         orders_grp = orders.groupby(["Group", "Symbol"], axis=0, as_index=True)["Date"].count()
         for grp in orders_grp.index:

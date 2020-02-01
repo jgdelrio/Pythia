@@ -1,6 +1,7 @@
 {
   "Information": "Monthly Prices (open, high, low, close) and Volumes",
   "Symbol": "TSLA",
-  "LastUpdate": "2020-01-02",
-  "TimeZone": "US/Eastern"
+  "LastUpdate": "2020-01-28 12:52:58",
+  "TimeZone": "US/Eastern",
+  "FirstTimeStamp": "2010-07-30T00:00:00"
 }

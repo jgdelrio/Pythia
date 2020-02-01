@@ -6,19 +6,15 @@ Documentation:   https://www.alphavantage.co/documentation/
 
 import re
 from src.config import crypto_currencies
-from src.utils import LOG, get_tabs
+from src.utils import LOG, get_tabs, validate_type
 
 
-ALPHA_VANTAGE_URI = "https://www.alphavantage.co/query"
+ALPHA_VANTAGE_PROTOCOL = "https://"
+ALPHA_VANTAGE_URI = ALPHA_VANTAGE_PROTOCOL + "www.alphavantage.co/query"
 fx_regex = re.compile("^fx_")
 digital_regex = re.compile("^digital_")
 fx_data_regex = re.compile(r"\A[A-Z]{3,4}_[A-Z]{3,4}")
 fx_crypto_regex = re.compile(r"\ACRYPTO_[A-Z]{3,4}_[A-Z]{3,4}")
-
-
-def validate_stock_symbol(symbol):
-    if not isinstance(symbol, str):
-        raise TypeError("Stock symbol must be a string")
 
 
 def validate_currency_pair(symbol):
@@ -55,7 +51,7 @@ def get_api_function(category):
     elif category == "sector":
         function = "SECTOR"
     else:
-        raise ValueError(f"invalid category {category}")
+        raise ValueError("invalid category {}".format(category))
     return function
 
 
@@ -66,7 +62,7 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
     category = category.lower()
 
     if category in ["daily", "daily-adjusted", "weekly", "weekly-adjusted", "monthly", "monthly-adjusted"]:
-        validate_stock_symbol(symbol)
+        validate_type(symbol, str, "stock_symbol")
         # Retrieval of daily time series
         function = get_api_function(category)
 
@@ -145,7 +141,7 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
         params = {"function": function, "apikey": key}
 
     else:
-        raise Exception(f"Category {category} not found")
+        raise Exception("Category {} not found".format(category))
 
     # Use extra parameters provided
     params = {**params, **kwargs}
@@ -154,11 +150,11 @@ def alpha_vantage_query(symbol, category, output_size=None, datatype=None, key=N
 
 def manage_vantage_errors(response, symbol):
     if "Error Message" in response.keys():
-        LOG.error(f"ERROR: Not possible to retrieve {symbol}. Msg: {response['Error Message']}")
+        LOG.error("ERROR: Not possible to retrieve {}. Msg: {}".format(symbol, response['Error Message']))
         return "api_error"
     elif "Note" in response.keys():
         if response["Note"][:111] == 'Thank you for using Alpha Vantage! Our standard API call frequency ' \
                                      'is 5 calls per minute and 500 calls per day.':
-            LOG.info(f"Retrieving {symbol}:{get_tabs(symbol, prev=12)}Max frequency reached! Waiting...")
+            LOG.info("Retrieving {}:{}Max frequency reached! Waiting...".format(symbol, get_tabs(symbol, prev=12)))
             return "longWait"
     return None

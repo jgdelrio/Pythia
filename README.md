@@ -74,3 +74,51 @@ manager.save_report("my_portfolio")
 - Retrieve and store fundamentals
 - Retrieve and store indices data and data by sector
 - Incorporate investment analysis of strategies
+
+
+### Comments about ML Trading
+
+#### Machine learning Hype
+
+Despite seen Machine Learning everywhere these days and being a "buzz word", ML is very tough to apply in trading.
+It's more useful as filtering mechanism rather than a decision tool. 
+This is because many times the trading test will be awesome and they will fail in real trading as they overfit.
+You may think that cross validation will solve everything but it's really easy to add bias and leak data...
+
+- Average and evaluate on different assets, time frames or periods.
+- Use non-conventional splits for train/test sets.
+- Add random noise
+- Evaluate generalization power
+- Monte-Carlo simulation to evaluate multiple scenarios 
+
+#### Risk Evaluation
+
+Pricing models to estimate an asset value in a predefined time horizon include:
+
+- Monte Carlo
+- Binomial Trees
+- Black-Scholes-Merton
+
+Implied Volatility (IV) typically overstates the fear in the marketplace, but sometimes it does not....
+
+#### Common Sense
+
+KISS (Keep It Simple Stupid) sounds good but it's very easy to get lost on complex and cutting edge techniques and forget the basics...
+
+Simple assumptions, simple statistics and Monte Carlo simulations go a long way.
+
+Risk assessment and position sizing are key to success.
+
+Commissions can rip you off if not taken into account.
+
+Evaluate liquidity (avoid low liquidity assets) and fundamentals.
+
+Track Market makers to understand the market since they tend to control the market inefficiencies.
+
+Focus on consistency, probabilities and risk rather than balance, market value and money.
+
+Evaluate market volatility and other fear/greed indices of the market. When the volatility is high is easier to find buyers if you want to sell, and periods of low volatility tend to finish with an explosion of volatility.
+
+
+
+
